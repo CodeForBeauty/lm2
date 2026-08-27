@@ -12,5 +12,10 @@ int main() {
 
     std::cout << t1[0];
 
+
+    lm2::Vector<int, 4> t2 = t1;
+
+    std::cout << lm2::dot(t1, t2) << "\n";
+
     return 0;
 }

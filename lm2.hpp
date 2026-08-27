@@ -16,6 +16,13 @@ template<typename T> constexpr T PI = T(3.1415926535897932384626433832795);
 template<typename T> constexpr T E = T(2.7182818284590452353602874713527);
 template<typename T> constexpr T PIrad = PI<T> / T(180);
 
+namespace axes {
+	constexpr size_t x = 0;
+	constexpr size_t y = 1;
+	constexpr size_t z = 2;
+	constexpr size_t w = 3;
+}
+
 // Vector types
 template<typename T, size_t N>
 class Vector {
@@ -38,7 +45,7 @@ public:
 		return data[index];
 	}
 
-	constexpr T& operator[](size_t index) const {
+	constexpr const T& operator[](size_t index) const {
 		return data[index];
 	}
 
@@ -155,6 +162,15 @@ T radians2degrees(T radians) {
 	return radians / PIrad<T>;
 }
 
+template<typename T>
+constexpr T sqrtScalar(T val) {
+	return std::sqrt(val);
+}
+template<typename T>
+constexpr T absScalar(T val) noexcept {
+	return std::abs(val);
+}
+
 
 // Functions
 // Vector
@@ -171,6 +187,16 @@ template<typename T>
 T dot(vector4D<T> a, vector4D<T> b) {
 	return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
 }
+template<typename T, size_t N>
+constexpr T dot(const Vector<T, N>& a, const Vector<T, N>& b) {
+	T output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output += a[i] * b[i];
+	}
+
+	return output;
+}
 // Cross
 template<typename T>
 T cross(vector2D<T> a, vector2D<T> b) {
@@ -182,6 +208,18 @@ vector3D<T> cross(vector3D<T> a, vector3D<T> b) {
 		a.y * b.z - a.z * b.y,
 		a.z * b.x - a.x * b.z,
 		a.x * b.y - a.y * b.x
+	};
+}
+template<typename T>
+constexpr T cross(const Vector<T, 2>& a, const Vector<T, 2>& b) {
+	return a[axes::x] * b[axes::y] - a[axes::y] * b[axes::x];
+}
+template<typename T>
+constexpr Vector<T, 3> cross(const Vector<T, 3>& a, const Vector<T, 3>& b) {
+	return {
+		a[axes::y] * b[axes::z] - a[axes::z] * b[axes::y],
+		a[axes::z] * b[axes::x] - a[axes::x] * b[axes::z],
+		a[axes::x] * b[axes::y] - a[axes::y] * b[axes::x],
 	};
 }
 // Magnitude
@@ -198,6 +236,16 @@ template<typename T>
 T magnitudeSquared(vector4D<T> vec) {
 	return vec.x * vec.x + vec.y * vec.y + vec.z * vec.z + vec.w * vec.w;
 }
+template<typename T, size_t N>
+constexpr T magnitudeSquared(const Vector<T, N>& vec) {
+	T result{};
+
+	for (size_t i = 0; i < N; i++) {
+		result += vec[i] * vec[i];
+	}
+
+	return result;
+}
 // Normal
 template<typename T>
 T magnitude(vector2D<T> vec) {
@@ -211,6 +259,10 @@ template<typename T>
 T magnitude(vector4D<T> vec) {
 	return std::sqrt(magnitudeSquared(vec));
 }
+template<typename T, size_t N>
+constexpr T magnitude(const Vector<T, N>& vec) {
+	return sqrtScalar(magnitudeSquared(vec));
+}
 // Normalize
 template<typename T>
 vector2D<T> normalize(vector2D<T> vec) {
@@ -222,6 +274,11 @@ vector3D<T> normalize(vector3D<T> vec) {
 }template<typename T>
 vector4D<T> normalize(vector4D<T> vec) {
 	return vec / magnitude(vec);
+}
+template<typename T, size_t N>
+constexpr Vector<T, N> normalize(const Vector<T, N>& vec) {
+	// FIX THIS
+	return vec;// / magnitude(vec);
 }
 
 // Matrix functions
@@ -420,6 +477,10 @@ matrix3x3<T> toMatrix(quaternion_t<T> quat) {
 
 // Equal
 template<typename T>
+constexpr bool equal(T a, T b, T epsilon = 0.000001) noexcept {
+	return absScalar(a - b) < epsilon;
+}
+template<typename T>
 bool equal(vector2D<T> a, vector2D<T> b, T epsilon = 0.0001) {
 	return (
 		std::abs(a.x - b.x) < epsilon &&
@@ -443,6 +504,16 @@ bool equal(vector4D<T> a, vector4D<T> b, T epsilon = 0.0001) {
 		std::abs(a.w - b.w) < epsilon
 		);
 }
+template<typename T, size_t N>
+constexpr bool equal(const Vector<T, N>& a, const Vector<T, N>& b, T epsilon = 0.000001) noexcept {
+	for (size_t i = 0; i < N; i++) {
+		if (absScalar(a[i] - b[i]) >= epsilon) {
+			return false;
+		}
+	}
+
+	return true;
+}
 template<typename T>
 bool equal(vector2D<T> a, T b, T epsilon = 0.0001) {
 	return equal(a, { b, b }, epsilon);
@@ -454,6 +525,16 @@ bool equal(vector3D<T> a, T b, T epsilon = 0.0001) {
 template<typename T>
 bool equal(vector4D<T> a, T b, T epsilon = 0.0001) {
 	return equal(a, { b, b, b, b }, epsilon);
+}
+template<typename T, size_t N>
+constexpr bool equal(const Vector<T, N>& a, T b, T epsilon = 0.000001) noexcept {
+	for (size_t i = 0; i < N; i++) {
+		if (absScalar(a[i] - b) >= epsilon) {
+			return false;
+		}
+	}
+
+	return true;
 }
 
 // Operator overloads
