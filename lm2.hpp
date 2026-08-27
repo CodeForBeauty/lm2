@@ -8,6 +8,7 @@
 #endif
 
 #include <cmath>
+#include <initializer_list>
 
 namespace lm2 {
 
@@ -16,6 +17,45 @@ template<typename T> constexpr T E = T(2.7182818284590452353602874713527);
 template<typename T> constexpr T PIrad = PI<T> / T(180);
 
 // Vector types
+template<typename T, size_t N>
+class Vector {
+private:
+	T data[N] {};
+
+public:
+	constexpr Vector() = default;
+	constexpr Vector(const Vector<T, N>& lv) = default;
+	constexpr Vector(Vector<T, N>& rv) = default;
+
+	constexpr Vector(std::initializer_list<T> l) : data{} {
+		size_t s = N < l.size() ? N : l.size();
+		for (size_t i = 0; i < s; i++) {
+			data[i] = *(l.begin() + i);
+		}
+	}
+
+	constexpr T& operator[](size_t index) {
+		return data[index];
+	}
+
+	constexpr T& operator[](size_t index) const {
+		return data[index];
+	}
+
+	template<size_t NOut> Vector<T, NOut> cast() const {
+		Vector<T, NOut> output{};
+
+		size_t s { N < NOut ? N : NOut };
+
+		for (size_t i = 0; i < s; i++) {
+			output[i] = data[i];
+		}
+
+		return output;
+	}
+};
+
+
 template<typename T> struct vector3D;
 template<typename T> struct vector4D;
 
