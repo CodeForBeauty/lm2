@@ -14,7 +14,7 @@ namespace lm2 {
 
 template<typename T> constexpr T PI = T(3.1415926535897932384626433832795);
 template<typename T> constexpr T E = T(2.7182818284590452353602874713527);
-template<typename T> constexpr T PIrad = PI<T> / T(180);
+template<typename T> constexpr T PIRAD = PI<T> / T(180);
 
 namespace axes {
 	constexpr size_t x = 0;
@@ -22,6 +22,8 @@ namespace axes {
 	constexpr size_t z = 2;
 	constexpr size_t w = 3;
 }
+
+template<typename T> constexpr T EPSILON = T(0.0000001);
 
 // Vector types
 template<typename T, size_t N>
@@ -155,11 +157,11 @@ using quaternion = quaternion_t<float>;
 // Scalar functions
 template<typename T>
 T degrees2radians(T degrees) {
-	return degrees * PIrad<T>;
+	return degrees * PIRAD<T>;
 }
 template<typename T>
 T radians2degrees(T radians) {
-	return radians / PIrad<T>;
+	return radians / PIRAD<T>;
 }
 
 template<typename T>
@@ -477,8 +479,8 @@ matrix3x3<T> toMatrix(quaternion_t<T> quat) {
 
 // Equal
 template<typename T>
-constexpr bool equal(T a, T b, T epsilon = 0.000001) noexcept {
-	return absScalar(a - b) < epsilon;
+constexpr bool equal(T a, T b, T epsilon = EPSILON<T>) noexcept {
+	return absScalar(a - b) <= epsilon;
 }
 template<typename T>
 bool equal(vector2D<T> a, vector2D<T> b, T epsilon = 0.0001) {
@@ -505,9 +507,9 @@ bool equal(vector4D<T> a, vector4D<T> b, T epsilon = 0.0001) {
 		);
 }
 template<typename T, size_t N>
-constexpr bool equal(const Vector<T, N>& a, const Vector<T, N>& b, T epsilon = 0.000001) noexcept {
+constexpr bool equal(const Vector<T, N>& a, const Vector<T, N>& b, T epsilon = EPSILON<T>) noexcept {
 	for (size_t i = 0; i < N; i++) {
-		if (absScalar(a[i] - b[i]) >= epsilon) {
+		if (absScalar(a[i] - b[i]) > epsilon) {
 			return false;
 		}
 	}
@@ -527,9 +529,9 @@ bool equal(vector4D<T> a, T b, T epsilon = 0.0001) {
 	return equal(a, { b, b, b, b }, epsilon);
 }
 template<typename T, size_t N>
-constexpr bool equal(const Vector<T, N>& a, T b, T epsilon = 0.000001) noexcept {
+constexpr bool equal(const Vector<T, N>& a, T b, T epsilon = EPSILON<T>) noexcept {
 	for (size_t i = 0; i < N; i++) {
-		if (absScalar(a[i] - b) >= epsilon) {
+		if (absScalar(a[i] - b) > epsilon) {
 			return false;
 		}
 	}
