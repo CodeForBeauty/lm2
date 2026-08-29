@@ -4,7 +4,7 @@
 #pragma once
 
 #ifndef LM2_NO_OUTPUT_FUNCTIONS
-#include <iostream>
+#include <ostream>
 #endif
 
 #include <cmath>
@@ -172,6 +172,11 @@ template<typename T>
 constexpr T absScalar(T val) noexcept {
 	return std::abs(val);
 }
+template<typename T>
+constexpr T fmodScalar(T val, T mod) {
+	return std::fmod(val, mod);
+}
+template<> constexpr int fmodScalar<int>(int val, int mod) = delete;
 
 
 // Functions
@@ -604,6 +609,47 @@ vector4D<T> operator/(vector4D<T> a, vector4D<T> b) {
 		b.w != 0 ? a.w / b.w : 0,
 	};
 }
+
+template<typename T, size_t N>
+constexpr Vector<T, N> operator+(const Vector<T, N>& a, const Vector<T, N>& b) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = a[i] + b[i];
+	}
+
+	return output;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N> operator-(const Vector<T, N>& a, const Vector<T, N>& b) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = a[i] - b[i];
+	}
+
+	return output;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N> operator*(const Vector<T, N>& a, const Vector<T, N>& b) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = a[i] * b[i];
+	}
+
+	return output;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N> operator/(const Vector<T, N>& a, const Vector<T, N>& b) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = a[i] / b[i];
+	}
+
+	return output;
+}
 // Scalar operations
 // vector2D
 template<typename T>
@@ -624,6 +670,47 @@ vector2D<T> operator/(vector2D<T> a, T s) {
 		return { 0, 0 };
 	}
 	return { a.x / s, a.y / s };
+}
+
+template<typename T, size_t N>
+constexpr Vector<T, N> operator+(const Vector<T, N>& a, T b) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = a[i] + b;
+	}
+
+	return output;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N> operator-(const Vector<T, N>& a, T b) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = a[i] - b;
+	}
+
+	return output;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N> operator*(const Vector<T, N>& a, T b) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = a[i] * b;
+	}
+
+	return output;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N> operator/(const Vector<T, N>& a, T b) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = a[i] / b;
+	}
+
+	return output;
 }
 // vector3D
 template<typename T>
@@ -687,6 +774,27 @@ vector4D<T> operator%(vector4D<T> a, T s) {
 	}
 	return { std::fmod(a.x, s), std::fmod(a.y, s), std::fmod(a.z, s), std::fmod(a.w, s) };
 }
+
+template<typename T, size_t N>
+constexpr Vector<T, N> operator%(const Vector<T, N>& a, T b) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = fmodScalar(a[i], b);
+	}
+
+	return output;
+}
+template<size_t N>
+constexpr Vector<int, N> operator%(const Vector<int, N>& a, int b) {
+	Vector<int, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = a[i] % b;
+	}
+
+	return output;
+}
 // With vectors
 template<typename T>
 vector2D<T> operator%(vector2D<T> a, vector2D<T> b) {
@@ -711,6 +819,26 @@ vector4D<T> operator%(vector4D<T> a, vector4D<T> b) {
 		b.z != 0 ? std::fmod(a.z, b.z) : 0,
 		b.w != 0 ? std::fmod(a.w, b.w) : 0
 	};
+}
+template<typename T, size_t N>
+constexpr Vector<T, N> operator%(const Vector<T, N>& a, const Vector<T, N>& b) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = fmodScalar(a[i], b[i]);
+	}
+
+	return output;
+}
+template<size_t N>
+constexpr Vector<int, N> operator%(const Vector<int, N>& a, const Vector<int, N>& b) {
+	Vector<int, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = a[i] % b[i];
+	}
+
+	return output;
 }
 // Compound assign operations
 // vector2D
@@ -747,6 +875,39 @@ template<typename T>
 vector3D<T>& operator/=(vector3D<T>& a, vector3D<T> b) {
 	return a = a / b;
 }
+
+template<typename T, size_t N>
+constexpr Vector<T, N>& operator+=(Vector<T, N>& a, const Vector<T, N>& b) {
+	for (size_t i = 0; i < N; i++) {
+		a[i] += b[i];
+	}
+
+	return a;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N>& operator-=(Vector<T, N>& a, const Vector<T, N>& b) {
+	for (size_t i = 0; i < N; i++) {
+		a[i] -= b[i];
+	}
+
+	return a;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N>& operator*=(Vector<T, N>& a, const Vector<T, N>& b) {
+	for (size_t i = 0; i < N; i++) {
+		a[i] *= b[i];
+	}
+
+	return a;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N>& operator/=(Vector<T, N>& a, const Vector<T, N>& b) {
+	for (size_t i = 0; i < N; i++) {
+		a[i] /= b[i];
+	}
+
+	return a;
+}
 // vector4D
 template<typename T>
 vector4D<T>& operator+=(vector4D<T>& a, vector4D<T> b) {
@@ -766,6 +927,39 @@ vector4D<T>& operator/=(vector4D<T>& a, vector4D<T> b) {
 }
 // Compound assign operations with scalar
 // vector2D
+template<typename T, size_t N>
+constexpr Vector<T, N>& operator+=(Vector<T, N>& a, T b) {
+	for (size_t i = 0; i < N; i++) {
+		a[i] += b;
+	}
+
+	return a;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N>& operator-=(Vector<T, N>& a, T b) {
+	for (size_t i = 0; i < N; i++) {
+		a[i] -= b;
+	}
+
+	return a;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N>& operator*=(Vector<T, N>& a, T b) {
+	for (size_t i = 0; i < N; i++) {
+		a[i] *= b;
+	}
+
+	return a;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N>& operator/=(Vector<T, N>& a, T b) {
+	for (size_t i = 0; i < N; i++) {
+		a[i] /= b;
+	}
+
+	return a;
+}
+
 template<typename T>
 vector2D<T>& operator+=(vector2D<T>& a, T s) {
 	return a = a + s;
@@ -844,6 +1038,17 @@ template<typename T>
 vector4D<T> operator-(vector4D<T> a) {
 	return { -a.x, -a.y, -a.z, -a.w };
 }
+
+template<typename T, size_t N>
+constexpr Vector<T, N> operator-(const Vector<T, N>& vec) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = -vec[i];
+	}
+
+	return output;
+}
 // Increment
 template<typename T>
 vector2D<T>& operator++(vector2D<T>& a) {
@@ -866,6 +1071,14 @@ vector4D<T>& operator++(vector4D<T>& a) {
 	++a.w;
 	return a;
 }
+template<typename T, size_t N>
+constexpr Vector<T, N> operator++(Vector<T, N>& vec) {
+	for (size_t i = 0; i < N; i++) {
+		++vec[i];
+	}
+
+	return vec;
+}
 // Decrement
 template<typename T>
 vector2D<T>& operator--(vector2D<T>& a) {
@@ -887,6 +1100,14 @@ vector4D<T>& operator--(vector4D<T>& a) {
 	--a.z;
 	--a.w;
 	return a;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N> operator--(Vector<T, N>& vec) {
+	for (size_t i = 0; i < N; i++) {
+		--vec[i];
+	}
+
+	return vec;
 }
 
 // Matrix multiplications
@@ -963,6 +1184,15 @@ std::ostream& operator<<(std::ostream& os, vector3D<T> vec) {
 template<typename T>
 std::ostream& operator<<(std::ostream& os, vector4D<T> vec) {
 	return os << "X: " << vec.x << " Y: " << vec.y << " Z: " << vec.z << " W: " << vec.w;
+}
+
+template<typename T, size_t N>
+std::ostream& operator<<(std::ostream& os, Vector<T, N> vec) {
+	for (size_t i = 0; i < N; i++) {
+		os << vec[i] << ", ";
+	}
+
+	return os;
 }
 
 
