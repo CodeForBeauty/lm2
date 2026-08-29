@@ -51,7 +51,8 @@ public:
 		return data[index];
 	}
 
-	template<size_t NOut> Vector<T, NOut> cast() const {
+	template<size_t NOut>
+	constexpr Vector<T, NOut> cast() const {
 		Vector<T, NOut> output{};
 
 		size_t s { N < NOut ? N : NOut };
@@ -99,6 +100,52 @@ using vec3 = vector3D<float>;
 using vec4 = vector4D<float>;
 
 // Matrix types
+template<typename T, size_t NRow, size_t NCol>
+class Matrix {
+private:
+	T data[NRow][NCol] {};
+
+public:
+	constexpr Matrix() = default;
+	constexpr Matrix(const Matrix<T, NRow, NCol>& lv) = default;
+	constexpr Matrix(Matrix<T, NRow, NCol>& rv) = default;
+
+	constexpr Matrix(std::initializer_list<std::initializer_list<T>> l) : data{} {
+		size_t s = NRow < l.size() ? NRow : l.size();
+		for (size_t i = 0; i < s; i++) {
+			size_t s1 = NCol < l.size() ? NCol : l.size();
+			for (size_t j = 0; j < s1; j++) {
+				data[i][j] = *((l.begin() + i)->begin() + j);
+			}
+		}
+	}
+
+	constexpr T& operator()(size_t rowIndex, size_t columnIndex) {
+		return data[rowIndex][columnIndex];
+	}
+
+	constexpr const T& operator()(size_t rowIndex, size_t columnIndex) const {
+		return data[rowIndex][columnIndex];
+	}
+
+	template<size_t NRowOut, size_t NColOut>
+	constexpr Matrix<T, NRowOut, NColOut> cast() const {
+		Matrix<T, NRowOut, NColOut> output{};
+
+		size_t s { NRow < NRowOut ? NRow : NRowOut };
+		size_t s1 { NCol < NColOut ? NCol : NColOut };
+
+		for (size_t i = 0; i < s; i++) {
+			for (size_t j = 0; j < s1; j++) {
+				output(i, j) = data[i][j];
+			}
+		}
+
+		return output;
+	}
+};
+
+
 template<typename T> struct matrix3x3;
 template<typename T> struct matrix4x4;
 
