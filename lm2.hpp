@@ -225,6 +225,28 @@ constexpr T fmodScalar(T val, T mod) {
 }
 template<> constexpr int fmodScalar<int>(int val, int mod) = delete;
 
+template<typename T>
+constexpr T sinScalar(T val) {
+	return std::sin(val);
+}
+template<typename T>
+constexpr T cosScalar(T val) {
+	return std::cos(val);
+}
+template<typename T>
+constexpr T tanScalar(T val) {
+	return std::tan(val);
+}
+
+template<typename T>
+constexpr T minScalar(T a, T b) noexcept {
+	return a < b ? a : b;
+}
+template<typename T>
+constexpr T maxScalar(T a, T b) noexcept {
+	return a > b ? a : b;
+}
+
 
 // Functions
 // Vector
@@ -361,6 +383,17 @@ matrix4x4<T> identity4x4() {
 		{ static_cast<T>(0.0), static_cast<T>(0.0), static_cast<T>(0.0), static_cast<T>(1.0) },
 	};
 }
+
+template<typename T, size_t N>
+constexpr Matrix<T, N, N> identityMatrix() {
+	Matrix<T, N, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output(i, i) = static_cast<T>(0);
+	}
+
+	return output;
+}
 // Transpose
 template<typename T>
 matrix2x2<T> transpose(matrix2x2<T> mat) {
@@ -386,6 +419,18 @@ matrix4x4<T> transpose(matrix4x4<T> mat) {
 		{ static_cast<T>(mat.x.w), static_cast<T>(mat.y.w), static_cast<T>(mat.z.w), static_cast<T>(mat.w.w) },
 	};
 }
+template<typename T, size_t NRow, size_t NCol>
+constexpr Matrix<T, NCol, NRow> transpose(const Matrix<T, NRow, NCol>& mat) {
+	Matrix<T, NCol, NRow> output{};
+
+	for (size_t i = 0; i < NRow; i++) {
+		for (size_t j = 0; j < NCol; j++) {
+			output(j, i) = mat(i, j);
+		}
+	}
+
+	return output;
+}
 // Position Matrices
 template<typename T>
 matrix3x3<T> position2D(vector2D<T> pos) {
@@ -404,6 +449,16 @@ matrix4x4<T> position3D(vector3D<T> pos) {
 		{ static_cast<T>(0.0), static_cast<T>(0.0), static_cast<T>(0.0), static_cast<T>(1.0) },
 	};
 }
+template<typename T, size_t N>
+constexpr Matrix<T, N + 1, N + 1> positionMatrix(const Vector<T, N>& pos) {
+	Matrix<T, N + 1, N + 1> output = identityMatrix<T, N>();
+
+	for (size_t i = 0; i < N; i++) {
+		output(i, N) = pos[i];
+	}
+
+	return output;
+}
 
 template<typename T>
 matrix2x2<T> scale2D(vector2D<T> scale) {
@@ -421,6 +476,16 @@ matrix3x3<T> scale3D(vector3D<T> scale) {
 		{ 0, 0, scale.z },
 	};
 }
+template<typename T, size_t N>
+constexpr Matrix<T, N, N> scaleMatrix(const Vector<T, N>& scale) {
+	Matrix<T, N, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output(i, i) = scale[i];
+	}
+
+	return output;
+}
 
 // Projection Matrices
 // ratio = height / width
@@ -437,6 +502,27 @@ template<typename T>
 matrix4x4<T> ortho(T width, T height, T near, T far) {
 	return ortho(-width, width, -height, height, near, far, height / width);
 }
+template<typename T>
+constexpr Matrix<T, 4, 4> orthographicProjection(T left, T right, T bottom, T top, T near, T far) {
+	T width = right - left;
+	T height = top - bottom;
+	T ratio = height / width;
+	return {
+		{ static_cast<T>(2) / width * ratio, static_cast<T>(0),          static_cast<T>(0),                 -((right + left) / width) },
+		{ static_cast<T>(0),                 static_cast<T>(2) / height, static_cast<T>(0),                 -((top + bottom) / height) },
+		{ static_cast<T>(0),                 static_cast<T>(0),          static_cast<T>(-2) / (far - near), -((far + near) / (far - near)) },
+		{ static_cast<T>(0),                 static_cast<T>(0),          static_cast<T>(0),                 static_cast<T>(1) },
+	};
+}
+template<typename T>
+constexpr Matrix<T, 4, 4> orthographicProjection(T width, T height, T near, T far) {
+	return {
+		{ static_cast<T>(2) / width * (height / width), static_cast<T>(0),          static_cast<T>(0),                 static_cast<T>(0) },
+		{ static_cast<T>(0),                            static_cast<T>(2) / height, static_cast<T>(0),                 static_cast<T>(0) },
+		{ static_cast<T>(0),                            static_cast<T>(0),          static_cast<T>(-2) / (far - near), -((far + near) / (far - near)) },
+		{ static_cast<T>(0),                            static_cast<T>(0),          static_cast<T>(0),                 static_cast<T>(1) },
+	};
+}
 // ratio = height / width
 template<typename T>
 matrix4x4<T> perspective(T fov, T near, T far, T ratio) {
@@ -446,6 +532,16 @@ matrix4x4<T> perspective(T fov, T near, T far, T ratio) {
 		{ 0,         -y,  0,                                0 },
 		{ 0,          0, -( (far + near) / (far - near) ), -( (2 * near * far) / (far - near) ) },
 		{ 0,          0, -1,                                0 },
+	};
+}
+template<typename T>
+constexpr Matrix<T, 4, 4> perspectiveProjection(T fov, T near, T far, T ratio) {
+	T s = static_cast<T>(1) / tanScalar(degrees2radians(fov / static_cast<T>(2)));
+	return {
+		{ s * ratio,         static_cast<T>(0), static_cast<T>(0),           static_cast<T>(0) },
+		{ static_cast<T>(0), -s,                static_cast<T>(0),           static_cast<T>(0) },
+		{ static_cast<T>(0), static_cast<T>(0), (far + near) / (near - far), (2 * far * near) / (near - far) },
+		{ static_cast<T>(0), static_cast<T>(0), static_cast<T>(-1),          static_cast<T>(0) },
 	};
 }
 
@@ -458,6 +554,16 @@ matrix2x2<T> rotation2D(T degrees) {
 	return {
 		{ cosV, sinV },
 		{ -sinV, cosV },
+	};
+}
+template<typename T>
+constexpr Matrix<T, 2, 2> rotation2DMatrix(T degrees) {
+	T rad = degrees2radians(degrees);
+	T sin = sinScalar(rad);
+	T cos = cosScalar(rad);
+	return {
+		{  cos, sin },
+		{ -sin, cos },
 	};
 }
 // Axis order: YXZ
@@ -485,6 +591,7 @@ matrix3x3<T> rotation3D(vector3D<T> degrees) {
 
 	return rotZ * (rotX * rotY);
 }
+// TODO: 3D rotation
 
 // Look at matrix
 template<typename T>
@@ -497,6 +604,17 @@ matrix4x4<T> lookAt(vector3D<T> eye, vector3D<T> at, vector3D<T> up) {
 		{ up.x,      up.y,      up.z,      dot(up, -eye) },
 		{ forward.x, forward.y, forward.z, dot(forward, -eye) },
 		{ 0,         0,         0,         1}
+	};
+}
+template<typename T>
+constexpr Matrix<T, 4, 4> viewMatrix(const Vector<T, 3>& eye, const Vector<T, 3>& at, const Vector<T, 3>& up) {
+	Vector<T, 3> forward = normalize(at - eye);
+	Vector<T, 3> right = normalize(cross(forward, up));
+	return {
+		{ right.x,           right.y,           right.z,           dot(right, -eye) },
+		{ up.x,              up.y,              up.z,              dot(up, -eye) },
+		{ forward.x,         forward.y,         forward.z,         dot(forward, -eye) },
+		{ static_cast<T>(0), static_cast<T>(0), static_cast<T>(0), static_cast<T>(1) },
 	};
 }
 
