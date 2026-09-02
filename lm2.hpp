@@ -80,7 +80,8 @@ public:
 	constexpr Matrix(std::initializer_list<std::initializer_list<T>> l) : data{} {
 		size_t s = NRow < l.size() ? NRow : l.size();
 		for (size_t i = 0; i < s; i++) {
-			size_t s1 = NCol < l.size() ? NCol : l.size();
+			size_t innerSize = (l.begin() + i)->size();
+			size_t s1 = NCol < innerSize ? NCol : innerSize;
 			for (size_t j = 0; j < s1; j++) {
 				data[i][j] = *((l.begin() + i)->begin() + j);
 			}
@@ -173,7 +174,7 @@ constexpr Vector<T, N> degreesToRadians(const Vector<T, N>& vec) {
 }
 template<typename T, size_t N>
 constexpr Vector<T, N> radiansToDegrees(const Vector<T, N>& vec) {
-	return vec * PIRAD<T>;
+	return vec / PIRAD<T>;
 }
 
 /// @brief Run function per component and return new vector
@@ -440,9 +441,10 @@ template<typename T>
 constexpr Matrix<T, 4, 4> viewMatrix(const Vector<T, 3>& eye, const Vector<T, 3>& at, const Vector<T, 3>& up) {
 	Vector<T, 3> forward = normalize(at - eye);
 	Vector<T, 3> right = normalize(cross(forward, up));
+	Vecotr<T, 3> upDir = cross(forward, right);
 	return {
 		{ right.x,           right.y,           right.z,           dot(right, -eye) },
-		{ up.x,              up.y,              up.z,              dot(up, -eye) },
+		{ upDir.x,           upDir.y,           updir.z,           dot(upDir, -eye) },
 		{ forward.x,         forward.y,         forward.z,         dot(forward, -eye) },
 		{ static_cast<T>(0), static_cast<T>(0), static_cast<T>(0), static_cast<T>(1) },
 	};
@@ -789,7 +791,7 @@ std::ostream& operator<<(std::ostream& os, Vector<T, N> vec) {
 }
 
 template<typename T, size_t NRow, size_t NCol>
-constexpr std::ostream& operator<<(std::ostream& os, const Matrix<T, NRow, NCol>& mat) {
+std::ostream& operator<<(std::ostream& os, const Matrix<T, NRow, NCol>& mat) {
 	for (size_t i = 0; i < NRow; i++) {
 		for (size_t j = 0; j < NCol; j++) {
 			os << mat(i, j);
