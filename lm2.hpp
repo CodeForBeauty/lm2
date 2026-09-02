@@ -389,7 +389,7 @@ constexpr Matrix<T, N, N> identityMatrix() {
 	Matrix<T, N, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
-		output(i, i) = static_cast<T>(0);
+		output(i, i) = static_cast<T>(1);
 	}
 
 	return output;
@@ -451,7 +451,7 @@ matrix4x4<T> position3D(vector3D<T> pos) {
 }
 template<typename T, size_t N>
 constexpr Matrix<T, N + 1, N + 1> positionMatrix(const Vector<T, N>& pos) {
-	Matrix<T, N + 1, N + 1> output = identityMatrix<T, N>();
+	Matrix<T, N + 1, N + 1> output = identityMatrix<T, N + 1>();
 
 	for (size_t i = 0; i < N; i++) {
 		output(i, N) = pos[i];
@@ -1301,6 +1301,30 @@ vector4D<T> operator*(matrix4x4<T> mat, vector4D<T> vec) {
 		dot(mat.w, vec),
 	};
 }
+template<typename T, size_t NRow, size_t NCol>
+constexpr Vector<T, NRow> operator*(const Matrix<T, NRow, NCol>& mat, const Vector<T, NCol>& vec) {
+	Vector<T, NRow> output{};
+
+	for (size_t i = 0; i < NRow; i++) {
+		for (size_t j = 0; j < NCol; j++) {
+			output[i] += vec[j] * mat(i, j);
+		}
+	}
+
+	return output;
+}
+template<typename T, size_t NRow, size_t NCol>
+constexpr Vector<T, NCol> operator*(const Vector<T, NRow>& vec, const Matrix<T, NRow, NCol>& mat) {
+	Vector<T, NCol> output{};
+
+	for (size_t j = 0; j < NCol; j++) {
+		for (size_t i = 0; i < NRow; i++) {
+			output[j] += vec[i] * mat(i, j);
+		}
+	}
+
+	return output;
+}
 // With matrix
 template<typename T>
 matrix2x2<T> operator*(matrix2x2<T> a, matrix2x2<T> b) {
@@ -1325,6 +1349,20 @@ matrix4x4<T> operator*(matrix4x4<T> a, matrix4x4<T> b) {
 		{ dot(a.z, { b.x.x, b.y.x, b.z.x, b.w.x }), dot(a.z, { b.x.y, b.y.y, b.z.y, b.w.y }), dot(a.z, { b.x.z, b.y.z, b.z.z, b.w.z }), dot(a.z, { b.x.w, b.y.w, b.z.w, b.w.w }) },
 		{ dot(a.w, { b.x.x, b.y.x, b.z.x, b.w.x }), dot(a.w, { b.x.y, b.y.y, b.z.y, b.w.y }), dot(a.w, { b.x.z, b.y.z, b.z.z, b.w.z }), dot(a.w, { b.x.w, b.y.w, b.z.w, b.w.w }) },
 	};
+}
+template<typename T, size_t NRow, size_t NCol, size_t NRow1>
+constexpr Matrix<T, NRow1, NCol> operator*(const Matrix<T, NRow, NCol>& a, const Matrix<T, NRow1, NRow>& b) {
+	Matrix<T, NRow1, NCol> output{};
+
+	for (size_t i = 0; i < NRow1; i++) {
+		for (size_t j = 0; j < NCol; j++) {
+			for (size_t k = 0; k < NRow; k++) {
+				output(i, j) += a(k, j) * b(i, k);
+			}
+		}
+	}
+
+	return output;
 }
 
 // Quaternions
@@ -1354,7 +1392,10 @@ std::ostream& operator<<(std::ostream& os, vector4D<T> vec) {
 template<typename T, size_t N>
 std::ostream& operator<<(std::ostream& os, Vector<T, N> vec) {
 	for (size_t i = 0; i < N; i++) {
-		os << vec[i] << ", ";
+		os << vec[i];
+		if (i != N - 1) {
+			os << ", ";
+		}
 	}
 
 	return os;
@@ -1374,6 +1415,23 @@ std::ostream& operator<<(std::ostream& os, matrix3x3<T> mat) {
 template<typename T>
 std::ostream& operator<<(std::ostream& os, matrix4x4<T> mat) {
 	return os << "X - " << mat.x << "\nY - " << mat.y << "\nZ - " << mat.z << "\nW - " << mat.w;
+}
+
+template<typename T, size_t NRow, size_t NCol>
+constexpr std::ostream& operator<<(std::ostream& os, const Matrix<T, NRow, NCol>& mat) {
+	for (size_t i = 0; i < NRow; i++) {
+		for (size_t j = 0; j < NCol; j++) {
+			os << mat(i, j);
+			if (j != NCol - 1) {
+				os << ", ";
+			}
+		}
+		if (i != NRow - 1) {
+			os << "\n";
+		}
+	}
+
+	return os;
 }
 
 #endif // #ifndef LM2_NO_OUTPUT_FUNCTIONS
