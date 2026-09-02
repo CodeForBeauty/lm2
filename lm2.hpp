@@ -123,11 +123,11 @@ using quaternion = quaternion_t<float>;
 
 // Scalar math functions
 template<typename T>
-constexpr T degreesToradians(T degrees) {
+constexpr T degreesToRadians(T degrees) {
 	return degrees * PIRAD<T>;
 }
 template<typename T>
-constexpr T radiansTodegrees(T radians) {
+constexpr T radiansToDegrees(T radians) {
 	return radians / PIRAD<T>;
 }
 
@@ -139,11 +139,10 @@ template<typename T>
 constexpr T absScalar(T val) noexcept {
 	return std::abs(val);
 }
-template<typename T>
+template<typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
 constexpr T fmodScalar(T val, T mod) {
 	return std::fmod(val, mod);
 }
-template<> constexpr int fmodScalar<int>(int val, int mod) = delete;
 
 template<typename T>
 constexpr T sinScalar(T val) {
@@ -368,7 +367,7 @@ constexpr Matrix<T, 4, 4> orthographicProjection(T width, T height, T near, T fa
 // ratio = height / width
 template<typename T>
 constexpr Matrix<T, 4, 4> perspectiveProjection(T fov, T near, T far, T ratio) {
-	T s = static_cast<T>(1) / tanScalar(degrees2radians(fov / static_cast<T>(2)));
+	T s = static_cast<T>(1) / tanScalar(degreesToRadians(fov / static_cast<T>(2)));
 	return {
 		{ s * ratio,         static_cast<T>(0), static_cast<T>(0),           static_cast<T>(0) },
 		{ static_cast<T>(0), -s,                static_cast<T>(0),           static_cast<T>(0) },
@@ -380,7 +379,7 @@ constexpr Matrix<T, 4, 4> perspectiveProjection(T fov, T near, T far, T ratio) {
 // Rotation Matrices
 template<typename T>
 constexpr Matrix<T, 2, 2> rotation2DMatrix(T degrees) {
-	T rad = degrees2radians(degrees);
+	T rad = degreesToRadians(degrees);
 	T sin = sinScalar(rad);
 	T cos = cosScalar(rad);
 	return {
@@ -588,7 +587,7 @@ constexpr Vector<T, N> operator/(const Vector<T, N>& a, T b) {
 	return output;
 }
 // Modulo
-template<typename T, size_t N>
+template<typename T, size_t N, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
 constexpr Vector<T, N> operator%(const Vector<T, N>& a, T b) {
 	Vector<T, N> output{};
 
@@ -598,9 +597,9 @@ constexpr Vector<T, N> operator%(const Vector<T, N>& a, T b) {
 
 	return output;
 }
-template<size_t N>
-constexpr Vector<int, N> operator%(const Vector<int, N>& a, int b) {
-	Vector<int, N> output{};
+template<typename T, size_t N, std::enable_if_t<std::is_integral<T>::value, bool> = true>
+constexpr Vector<T, N> operator%(const Vector<T, N>& a, T b) {
+	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
 		output[i] = a[i] % b;
@@ -609,7 +608,7 @@ constexpr Vector<int, N> operator%(const Vector<int, N>& a, int b) {
 	return output;
 }
 // With vectors
-template<typename T, size_t N>
+template<typename T, size_t N, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
 constexpr Vector<T, N> operator%(const Vector<T, N>& a, const Vector<T, N>& b) {
 	Vector<T, N> output{};
 
@@ -619,9 +618,9 @@ constexpr Vector<T, N> operator%(const Vector<T, N>& a, const Vector<T, N>& b) {
 
 	return output;
 }
-template<size_t N>
-constexpr Vector<int, N> operator%(const Vector<int, N>& a, const Vector<int, N>& b) {
-	Vector<int, N> output{};
+template<typename T, size_t N, std::enable_if_t<std::is_integral<T>::value, bool> = true>
+constexpr Vector<T, N> operator%(const Vector<T, N>& a, const Vector<T, N>& b) {
+	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
 		output[i] = a[i] % b[i];
