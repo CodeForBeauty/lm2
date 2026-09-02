@@ -201,13 +201,13 @@ struct quaternion_t {
 
 using quaternion = quaternion_t<float>;
 
-// Scalar functions
+// Scalar math functions
 template<typename T>
-T degrees2radians(T degrees) {
+constexpr T degrees2radians(T degrees) {
 	return degrees * PIRAD<T>;
 }
 template<typename T>
-T radians2degrees(T radians) {
+constexpr T radians2degrees(T radians) {
 	return radians / PIRAD<T>;
 }
 
@@ -247,6 +247,84 @@ constexpr T maxScalar(T a, T b) noexcept {
 	return a > b ? a : b;
 }
 
+// Basic math functions on vectors
+template<typename T, size_t N>
+constexpr Vector<T, N> degreesToRadians(const Vector<T, N>& vec) {
+	return vec * PIRAD<T>;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N> radiansToDegrees(const Vector<T, N>& vec) {
+	return vec * PIRAD<T>;
+}
+
+/// @brief Run function per component and return new vector
+/// @tparam T vector data type
+/// @tparam N vector dimensions
+/// @param vec input vector
+/// @param func function to run per component
+/// @return a new vector with applied function
+template<typename T, size_t N>
+constexpr Vector<T, N> compFuncVector(const Vector<T, N>& vec, T (*func)(T)) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = func(vec[i]);
+	}
+
+	return output;
+}
+
+template<typename T, size_t N>
+constexpr Vector<T, N> sqrtVector(const Vector<T, N>& vec) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = sqrtScalar(vec[i]);
+	}
+
+	return output;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N> absVector(const Vector<T, N>& vec) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = absScalar(vec[i]);
+	}
+
+	return output;
+}
+
+template<typename T, size_t N>
+constexpr Vector<T, N> sinVector(const Vector<T, N>& vec) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = sinScalar(vec[i]);
+	}
+
+	return output;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N> cosVector(const Vector<T, N>& vec) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = cosScalar(vec[i]);
+	}
+
+	return output;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N> tanVector(const Vector<T, N>& vec) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = tanScalar(vec[i]);
+	}
+
+	return output;
+}
 
 // Functions
 // Vector
@@ -353,8 +431,7 @@ vector4D<T> normalize(vector4D<T> vec) {
 }
 template<typename T, size_t N>
 constexpr Vector<T, N> normalize(const Vector<T, N>& vec) {
-	// FIX THIS
-	return vec;// / magnitude(vec);
+	return vec / magnitude(vec);
 }
 
 // Matrix functions
@@ -591,7 +668,53 @@ matrix3x3<T> rotation3D(vector3D<T> degrees) {
 
 	return rotZ * (rotX * rotY);
 }
-// TODO: 3D rotation
+enum class Rotation3DAxisOrder {
+	XYZ,
+	XZY,
+	YXZ,
+	YZX,
+	ZXY,
+	ZYX,
+};
+template<typename T>
+constexpr Matrix<T, 3, 3> eulerRotationMatrix(const Vector<T, 3>& degrees, const Rotation3DAxisOrder axisOrder = Rotation3DAxisOrder::YXZ) {
+	Vector<T, 3> rad{ degreesToRadians(degrees) };
+	Vector<T, 3> sin{ sinVector(rad) };
+	Vector<T, 3> cos{ cosVector(rad) };
+
+	Matrix<T, 3, 3> rotX {
+		{ 1,  0,      0      },
+		{ 0,  cos[0], sin[0] },
+		{ 0, -sin[0], cos[0] },
+	};
+	Matrix<T, 3, 3> rotY {
+		{  cos[1], 0, sin[1] },
+		{  0,      1, 0      },
+		{ -sin[1], 0, cos[1] },
+	};
+	Matrix<T, 3, 3> rotZ {
+		{  cos[2], sin[2], 0 },
+		{ -sin[2], cos[2], 0 },
+		{  0,      0,      1 },
+	};
+
+	switch (axisOrder) {
+	case Rotation3DAxisOrder::XYZ:
+		return rotX * rotY * rotZ;
+	case Rotation3DAxisOrder::XZY:
+		return rotX * rotZ * rotY;
+	case Rotation3DAxisOrder::YXZ:
+		return rotY * rotX * rotZ;
+	case Rotation3DAxisOrder::YZX:
+		return rotY * rotZ * rotX;
+	case Rotation3DAxisOrder::ZXY:
+		return rotZ * rotX * rotY;
+	case Rotation3DAxisOrder::ZYX:
+		return rotZ * rotY * rotX;
+	default:
+		return rotX * rotY * rotZ;
+	}
+}
 
 // Look at matrix
 template<typename T>
