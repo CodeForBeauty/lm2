@@ -16,12 +16,12 @@ template<typename T> constexpr T PI = T(3.1415926535897932384626433832795);
 template<typename T> constexpr T E = T(2.7182818284590452353602874713527);
 template<typename T> constexpr T PIRAD = PI<T> / T(180);
 
-namespace axes {
-	constexpr size_t x = 0;
-	constexpr size_t y = 1;
-	constexpr size_t z = 2;
-	constexpr size_t w = 3;
-}
+enum class axes {
+	x = 0,
+	y = 1,
+	z = 2,
+	w = 3,
+};
 
 template<typename T> constexpr T EPSILON = T(0.0000001);
 
