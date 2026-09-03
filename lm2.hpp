@@ -16,11 +16,13 @@ template<typename T> constexpr T PI = T(3.1415926535897932384626433832795);
 template<typename T> constexpr T E = T(2.7182818284590452353602874713527);
 template<typename T> constexpr T PIRAD = PI<T> / T(180);
 
-enum class axes {
-	x = 0,
-	y = 1,
-	z = 2,
-	w = 3,
+namespace axes {
+	enum {
+		x = 0,
+		y = 1,
+		z = 2,
+		w = 3,
+	};
 };
 
 template<typename T> constexpr T EPSILON = T(0.0000001);
@@ -110,6 +112,24 @@ public:
 		}
 
 		return output;
+	}
+
+	void swapCol(size_t aCol, size_t bCol) {
+		if (aCol == bCol) {
+			return;
+		}
+		for (size_t row = 0; row < NRow; row++) {
+			std::swap(data[row][aCol], data[row][bCol]);
+		}
+	}
+
+	void swapRow(size_t aRow, size_t bRow) {
+		if (aRow == bRow) {
+			return;
+		}
+		for (size_t col = 0; col < NCol; col++) {
+			std::swap(data[aRow][col], data[bRow][col]);
+		}
 	}
 };
 
@@ -320,6 +340,115 @@ constexpr Matrix<T, NCol, NRow> transpose(const Matrix<T, NRow, NCol>& mat) {
 
 	return output;
 }
+// Gaussian elimination
+template<typename T, size_t NRow, size_t NCol>
+constexpr Matrix<T, NRow, NCol> gaussElim(const Matrix<T, NRow, NCol>& mat) {
+	Matrix<T, NRow, NCol> output{ mat };
+
+	for (size_t i = 0; i < NCol; i++) {
+
+		T maxVal = absScalar(output(i, i));
+		size_t maxIndex = i;
+
+		for (size_t row = i + 1; row < NRow; row++) {
+			T absVal = absScalar(output(row, i));
+			if (absVal > maxVal) {
+				maxVal = absVal;
+				maxIndex = row;
+			}
+		}
+
+		output.swapRow(i, maxIndex);
+
+		for (size_t row = i + 1; row < NRow; row++) {
+			T factor = output(row, i) / output(i, i);
+
+			output(row, i) = static_cast<T>(0);
+
+			for (size_t col = i + 1; col < NCol; col++) {
+				output(row, col) -= factor * output(i, col);
+			}
+		}
+	}
+
+	return output;
+}
+
+template<typename T, size_t N>
+constexpr std::pair<Matrix<T, N, N>, Vector<T, N>> gaussElim(const Matrix<T, N, N>& mat, const Vector<T, N>& vec) {
+	Matrix<T, N, N> outMat{ mat };
+
+	Vector<T, N> tmpVec{ vec };
+
+	for (size_t i = 0; i < N; i++) {
+
+		T maxVal = absScalar(outMat(i, i));
+		size_t maxIndex = i;
+
+		for (size_t row = i + 1; row < N; row++) {
+			T absVal = absScalar(outMat(row, i));
+			if (absVal > maxVal) {
+				maxVal = absVal;
+				maxIndex = row;
+			}
+		}
+
+		outMat.swapRow(i, maxIndex);
+
+		std::swap(tmpVec[i], tmpVec[maxIndex]);
+
+		for (size_t row = i + 1; row < N; row++) {
+			T factor = outMat(row, i) / outMat(i, i);
+
+			outMat(row, i) = static_cast<T>(0);
+
+			for (size_t col = i + 1; col < N; col++) {
+				outMat(row, col) -= factor * outMat(i, col);
+			}
+
+			tmpVec[row] -= factor * tmpVec[i];
+		}
+	}
+
+	Vector<T, N> outVec{};
+
+	for (size_t i = N; i > 0; i--) {
+		T sum = tmpVec[i - 1];
+
+		for (size_t j = i; j < N; j++) {
+			sum -= outMat(i - 1, j) * outVec[j];
+		}
+
+		outVec[i - 1] = sum / outMat(i - 1, i - 1);
+	}
+
+	return { outMat, outVec };
+}
+// LU decomposition
+// Cholesky decomposition
+// Determinant
+template<typename T, size_t N>
+constexpr T determinant(const Matrix<T, N, N>& mat) {
+	// TODO: Implement generic version
+	return 0;
+}
+template<typename T>
+constexpr T determinant(const Matrix<T, 2, 2>& mat) {
+	return (mat(0, 0) * mat(1, 1)) - (mat(0, 1) * mat(1, 0));
+}
+template<typename T>
+constexpr T determinant(const Matrix<T, 3, 3>& mat) {
+	return mat(axes::x, axes::x) * (mat(axes::y, axes::y) * mat(axes::z, axes::z) - mat(axes::z, axes::y) * mat(axes::y, axes::z))
+		- mat(axes::y, axes::x) * (mat(axes::x, axes::y) * mat(axes::z, axes::z) - mat(axes::z, axes::y) * mat(axes::x, axes::z))
+		+ mat(axes::z, axes::x) * (mat(axes::x, axes::y) * mat(axes::y, axes::z) - mat(axes::y, axes::y) * mat(axes::x, axes::z));
+}
+// Inverse
+// Adjugate
+// Cofactor
+// Eigenvalues
+// Eigenvectors
+// Decompose transform
+
 // Position Matrices
 template<typename T, size_t N>
 constexpr Matrix<T, N + 1, N + 1> positionMatrix(const Vector<T, N>& pos) {
@@ -441,10 +570,10 @@ template<typename T>
 constexpr Matrix<T, 4, 4> viewMatrix(const Vector<T, 3>& eye, const Vector<T, 3>& at, const Vector<T, 3>& up) {
 	Vector<T, 3> forward = normalize(at - eye);
 	Vector<T, 3> right = normalize(cross(forward, up));
-	Vecotr<T, 3> upDir = cross(forward, right);
+	Vector<T, 3> upDir = cross(forward, right);
 	return {
 		{ right.x,           right.y,           right.z,           dot(right, -eye) },
-		{ upDir.x,           upDir.y,           updir.z,           dot(upDir, -eye) },
+		{ upDir.x,           upDir.y,           upDir.z,           dot(upDir, -eye) },
 		{ forward.x,         forward.y,         forward.z,         dot(forward, -eye) },
 		{ static_cast<T>(0), static_cast<T>(0), static_cast<T>(0), static_cast<T>(1) },
 	};
