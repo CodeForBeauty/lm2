@@ -9,6 +9,7 @@
 
 #include <cmath>
 #include <initializer_list>
+#include <tuple>
 
 namespace lm2 {
 
@@ -425,6 +426,47 @@ constexpr std::pair<Matrix<T, N, N>, Vector<T, N>> gaussElim(const Matrix<T, N, 
 	return { outMat, outVec };
 }
 // LU decomposition
+template<typename T, size_t NRow, size_t NCol>
+constexpr std::tuple<Matrix<T, NCol, NCol>, Matrix<T, NCol, NCol>, Matrix<T, NRow, NCol>> plu(const Matrix<T, NRow, NCol>& mat) {
+	Matrix<T, NCol, NCol> permutation{ identityMatrix<T, NCol>() };
+	Matrix<T, NCol, NCol> lower{};
+	Matrix<T, NRow, NCol> upper{ mat };
+
+	for (size_t i = 0; i < NCol; i++) {
+
+		T maxVal = absScalar(upper(i, i));
+		size_t maxIndex = i;
+
+		for (size_t row = i + 1; row < NRow; row++) {
+			T absVal = absScalar(upper(row, i));
+			if (absVal > maxVal) {
+				maxVal = absVal;
+				maxIndex = row;
+			}
+		}
+
+		upper.swapRow(i, maxIndex);
+		permutation.swapRow(i, maxIndex);
+
+		for (size_t row = i + 1; row < NRow; row++) {
+			T factor = upper(row, i) / upper(i, i);
+
+			upper(row, i) = static_cast<T>(0);
+
+			for (size_t col = i + 1; col < NCol; col++) {
+				upper(row, col) -= factor * upper(i, col);
+			}
+
+			lower(row, i) = factor;
+		}
+	}
+
+	for (size_t i = 0; i < NCol; i++) {
+		lower(i, i) = static_cast<T>(1);
+	}
+
+	return { permutation, lower, upper };
+}
 // Cholesky decomposition
 // Determinant
 template<typename T, size_t N>
