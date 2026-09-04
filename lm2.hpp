@@ -144,15 +144,15 @@ struct quaternion_t {
 using quaternion = quaternion_t<float>;
 
 // Permutation types
-template<typename T, size_t N>
+template<size_t N>
 class Permutation1D {
 private:
-	T data[N] {};
+	size_t data[N] {};
 	bool isPositive = true;
 
 public:
-	constexpr Permutation1D(const Permutation1D<T, N>& rv) = default;
-	constexpr Permutation1D(Permutation1D<T, N>& lv) = default;
+	constexpr Permutation1D(const Permutation1D<N>& rv) = default;
+	constexpr Permutation1D(Permutation1D<N>& lv) = default;
 
 	constexpr Permutation1D() : data{} {
 		for (size_t i = 0; i < N; i++) {
@@ -160,11 +160,15 @@ public:
 		}
 	}
 
+	constexpr bool isPositive() const {
+		return isPositive;
+	}
+
 	constexpr size_t size() const {
 		return N;
 	}
 
-	constexpr const T& operator[](size_t index) const {
+	constexpr const size_t& operator[](size_t index) const {
 		return data[index];
 	}
 
@@ -178,7 +182,7 @@ public:
 			return;
 		}
 		
-		T tmpVal = data[from];
+		size_t tmpVal = data[from];
 		if (from < to) {
 			for (size_t i = from; i < to; i++) {
 				data[i] = data[i + 1];
@@ -401,31 +405,37 @@ constexpr Matrix<T, NCol, NRow> transpose(const Matrix<T, NRow, NCol>& mat) {
 }
 // Gaussian elimination
 template<typename T, size_t NRow, size_t NCol>
-constexpr Matrix<T, NRow, NCol> gaussElim(const Matrix<T, NRow, NCol>& mat) {
-	Matrix<T, NRow, NCol> output{ mat };
+struct RowPermutMatrixPair {
+	Permutation1D<NCol> permutation;
+	Matrix<T, NRow, NCol> matrix;
+};
+template<typename T, size_t NRow, size_t NCol>
+constexpr RowPermutMatrixPair<T, NRow, NCol> gaussElim(const Matrix<T, NRow, NCol>& mat) {
+	RowPermutMatrixPair<T, NRow, NCol> output{ {}, mat };
 
 	for (size_t i = 0; i < NCol; i++) {
 
-		T maxVal = absScalar(output(i, i));
+		T maxVal = absScalar(output.matrix(i, i));
 		size_t maxIndex = i;
 
 		for (size_t row = i + 1; row < NRow; row++) {
-			T absVal = absScalar(output(row, i));
+			T absVal = absScalar(output.matrix(row, i));
 			if (absVal > maxVal) {
 				maxVal = absVal;
 				maxIndex = row;
 			}
 		}
 
-		output.swapRow(i, maxIndex);
+		output.matrix.swapRow(i, maxIndex);
+		output.permutation.swap(i, maxIndex);
 
 		for (size_t row = i + 1; row < NRow; row++) {
-			T factor = output(row, i) / output(i, i);
+			T factor = output.matrix(row, i) / output.matrix(i, i);
 
-			output(row, i) = static_cast<T>(0);
+			output.matrix(row, i) = static_cast<T>(0);
 
 			for (size_t col = i + 1; col < NCol; col++) {
-				output(row, col) -= factor * output(i, col);
+				output.matrix(row, col) -= factor * output.matrix(i, col);
 			}
 		}
 	}
@@ -434,96 +444,103 @@ constexpr Matrix<T, NRow, NCol> gaussElim(const Matrix<T, NRow, NCol>& mat) {
 }
 
 template<typename T, size_t N>
-constexpr std::pair<Matrix<T, N, N>, Vector<T, N>> gaussElim(const Matrix<T, N, N>& mat, const Vector<T, N>& vec) {
-	Matrix<T, N, N> outMat{ mat };
-
+struct RowPermutMatrixResult {
+	Permutation1D<N> permutation;
+	Matrix<T, N, N> matrix;
+	Vector<T, N> result;
+};
+template<typename T, size_t N>
+constexpr RowPermutMatrixResult<T, N> gaussElim(const Matrix<T, N, N>& mat, const Vector<T, N>& vec) {
 	Vector<T, N> tmpVec{ vec };
+	RowPermutMatrixResult<T, N> output{ {}, mat, {} };
 
 	for (size_t i = 0; i < N; i++) {
 
-		T maxVal = absScalar(outMat(i, i));
+		T maxVal = absScalar(output.matrix(i, i));
 		size_t maxIndex = i;
 
 		for (size_t row = i + 1; row < N; row++) {
-			T absVal = absScalar(outMat(row, i));
+			T absVal = absScalar(output.matrix(row, i));
 			if (absVal > maxVal) {
 				maxVal = absVal;
 				maxIndex = row;
 			}
 		}
 
-		outMat.swapRow(i, maxIndex);
+		output.matrix.swapRow(i, maxIndex);
 
 		std::swap(tmpVec[i], tmpVec[maxIndex]);
 
 		for (size_t row = i + 1; row < N; row++) {
-			T factor = outMat(row, i) / outMat(i, i);
+			T factor = output.matrix(row, i) / output.matrix(i, i);
 
-			outMat(row, i) = static_cast<T>(0);
+			output.matrix(row, i) = static_cast<T>(0);
 
 			for (size_t col = i + 1; col < N; col++) {
-				outMat(row, col) -= factor * outMat(i, col);
+				output.matrix(row, col) -= factor * output.matrix(i, col);
 			}
 
 			tmpVec[row] -= factor * tmpVec[i];
 		}
 	}
 
-	Vector<T, N> outVec{};
-
 	for (size_t i = N; i > 0; i--) {
 		T sum = tmpVec[i - 1];
 
 		for (size_t j = i; j < N; j++) {
-			sum -= outMat(i - 1, j) * outVec[j];
+			sum -= output.matrix(i - 1, j) * output.result[j];
 		}
 
-		outVec[i - 1] = sum / outMat(i - 1, i - 1);
+		output.result[i - 1] = sum / output.matrix(i - 1, i - 1);
 	}
 
-	return { outMat, outVec };
+	return output;
 }
 // LU decomposition
 template<typename T, size_t NRow, size_t NCol>
-constexpr std::tuple<Matrix<T, NCol, NCol>, Matrix<T, NCol, NCol>, Matrix<T, NRow, NCol>> plu(const Matrix<T, NRow, NCol>& mat) {
-	Matrix<T, NCol, NCol> permutation{ identityMatrix<T, NCol>() };
-	Matrix<T, NCol, NCol> lower{};
-	Matrix<T, NRow, NCol> upper{ mat };
+struct PLUData {
+	Permutation1D<NCol> permutation;
+	Matrix<T, NCol, NCol> lower;
+	Matrix<T, NRow, NCol> upper;
+};
+template<typename T, size_t NRow, size_t NCol>
+constexpr PLUData<T, NRow, NCol> plu(const Matrix<T, NRow, NCol>& mat) {
+	PLUData<T, NRow, NCol> output{ {}, {}, {mat} };
 
 	for (size_t i = 0; i < NCol; i++) {
 
-		T maxVal = absScalar(upper(i, i));
+		T maxVal = absScalar(output.upper(i, i));
 		size_t maxIndex = i;
 
 		for (size_t row = i + 1; row < NRow; row++) {
-			T absVal = absScalar(upper(row, i));
+			T absVal = absScalar(output.upper(row, i));
 			if (absVal > maxVal) {
 				maxVal = absVal;
 				maxIndex = row;
 			}
 		}
 
-		upper.swapRow(i, maxIndex);
-		permutation.swapRow(i, maxIndex);
+		output.upper.swapRow(i, maxIndex);
+		output.permutation.swap(i, maxIndex);
 
 		for (size_t row = i + 1; row < NRow; row++) {
-			T factor = upper(row, i) / upper(i, i);
+			T factor = output.upper(row, i) / output.upper(i, i);
 
-			upper(row, i) = static_cast<T>(0);
+			output.upper(row, i) = static_cast<T>(0);
 
 			for (size_t col = i + 1; col < NCol; col++) {
-				upper(row, col) -= factor * upper(i, col);
+				output.upper(row, col) -= factor * output.upper(i, col);
 			}
 
-			lower(row, i) = factor;
+			output.lower(row, i) = factor;
 		}
 	}
 
 	for (size_t i = 0; i < NCol; i++) {
-		lower(i, i) = static_cast<T>(1);
+		output.lower(i, i) = static_cast<T>(1);
 	}
 
-	return { permutation, lower, upper };
+	return output;
 }
 // Cholesky decomposition
 // Determinant
