@@ -148,7 +148,7 @@ template<size_t N>
 class Permutation1D {
 private:
 	size_t data[N] {};
-	bool isPositive = true;
+	bool sign = true;
 
 public:
 	constexpr Permutation1D(const Permutation1D<N>& rv) = default;
@@ -161,7 +161,7 @@ public:
 	}
 
 	constexpr bool isPositive() const {
-		return isPositive;
+		return sign;
 	}
 
 	constexpr size_t size() const {
@@ -174,7 +174,7 @@ public:
 
 	constexpr void swap(size_t aIdx, size_t bIdx) {
 		std::swap(data[aIdx], data[bIdx]);
-		isPositive = !isPositive;
+		sign = !sign;
 	}
 
 	constexpr void move(size_t from, size_t to) {
@@ -189,7 +189,7 @@ public:
 			}
 
 			if ((to - from) % 2 == 0) {
-				isPositive = !isPositive;
+				sign = !sign;
 			}
 		}
 		else {
@@ -198,7 +198,7 @@ public:
 			}
 
 			if ((from - to) % 2 == 0) {
-				isPositive = !isPositive;
+				sign = !sign;
 			}
 		}
 		data[to] = tmpVal;
@@ -1021,6 +1021,47 @@ quaternion_t<T> operator-(quaternion_t<T> quat) {
 	return { -quat.w, -quat.x, -quat.y, -quat.z };
 }
 
+// Permutations
+template<typename T, size_t N>
+constexpr Vector<T, N> operator*(const Permutation1D<N>& perm, const Vector<T, N>& vec) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = vec[perm[i]];
+	}
+
+	return output;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N> operator*(const Vector<T, N>& vec, const Permutation1D<N>& perm) {
+	return perm * vec;
+}
+
+template<typename T, size_t NRow, size_t NCol>
+constexpr Matrix<T, NRow, NCol> operator*(const Matrix<T, NRow, NCol>& mat, const Permutation1D<NCol>& perm) {
+	Matrix<T, NRow, NCol> output{};
+
+	for (size_t i = 0; i < NRow; i++) {
+		for (size_t j = 0; j < NCol; j++) {
+			output(i, j) = mat(i, perm[j]);
+		}
+	}
+
+	return output;
+}
+template<typename T, size_t NRow, size_t NCol>
+constexpr Matrix<T, NRow, NCol> operator*(const Permutation1D<NCol>& perm, const Matrix<T, NRow, NCol>& mat) {
+	Matrix<T, NRow, NCol> output{};
+
+	for (size_t i = 0; i < NRow; i++) {
+		for (size_t j = 0; j < NCol; j++) {
+			output(i, j) = mat(perm[i], j);
+		}
+	}
+
+	return output;
+}
+
 
 #ifndef LM2_NO_OUTPUT_FUNCTIONS
 
@@ -1047,6 +1088,19 @@ std::ostream& operator<<(std::ostream& os, const Matrix<T, NRow, NCol>& mat) {
 		}
 		if (i != NRow - 1) {
 			os << "\n";
+		}
+	}
+
+	return os;
+}
+
+
+template<size_t N>
+std::ostream& operator<<(std::ostream& os, const Permutation1D<N>& perm) {
+	for (size_t i = 0; i < N; i++) {
+		os << perm[i];
+		if (i != N - 1) {
+			os << ", ";
 		}
 	}
 
