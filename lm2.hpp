@@ -505,6 +505,32 @@ struct PLUData {
 	Permutation1D<NCol> permutation;
 	Matrix<T, NCol, NCol> lower;
 	Matrix<T, NRow, NCol> upper;
+
+	constexpr Vector<T, NCol> solve(Vector<T, NCol> vec) const {
+		static_assert(NRow == NCol && "Concrete solution only exists for square matrices");
+
+		vec = permutation * vec;
+
+		for (size_t i = 0; i < NCol; i++) {
+			for (size_t j = i + 1; j < NRow; j++) {
+				vec[j] -= lower(j, i) * vec[i];
+			}
+		}
+
+		Vector<T, NCol> result{};
+
+		for (size_t i = NRow; i > 0; i--) {
+			T sum = vec[i - 1];
+
+			for (size_t j = i; j < NCol; j++) {
+				sum -= upper(i - 1, j) * result[j];
+			}
+
+			result[i - 1] = sum / upper(i - 1, i - 1);
+		}
+
+		return result;
+	}
 };
 template<typename T, size_t NRow, size_t NCol>
 constexpr PLUData<T, NRow, NCol> plu(const Matrix<T, NRow, NCol>& mat) {
@@ -569,6 +595,25 @@ constexpr T determinant(const Matrix<T, 3, 3>& mat) {
 		+ mat(axes::z, axes::x) * (mat(axes::x, axes::y) * mat(axes::y, axes::z) - mat(axes::y, axes::y) * mat(axes::x, axes::z));
 }
 // Inverse
+template<typename T, size_t N>
+constexpr Matrix<T, N, N> inverse(const Matrix<T, N, N>& mat) {
+	PLUData<T, N, N> solver = plu(mat);
+
+	Matrix<T, N, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		Vector<T, N> dir{};
+		dir[i] = static_cast<T>(1);
+
+		dir = solver.solve(dir);
+
+		for (size_t j = 0; j < N; j++) {
+			output(j, i) = dir[j];
+		}
+	}
+
+	return output;
+}
 // Adjugate
 // Cofactor
 // Eigenvalues
