@@ -615,7 +615,36 @@ constexpr Matrix<T, N, N> inverse(const Matrix<T, N, N>& mat) {
 	return output;
 }
 // Adjugate
+template<typename T, size_t N>
+constexpr Matrix<T, N, N> adjugate(const Matrix<T, N, N>& mat) {
+	PLUData<T, N, N> solver = plu(mat);
+
+	Matrix<T, N, N> inv{};
+
+	for (size_t i = 0; i < N; i++) {
+		Vector<T, N> dir{};
+		dir[i] = static_cast<T>(1);
+
+		dir = solver.solve(dir);
+
+		for (size_t j = 0; j < N; j++) {
+			inv(j, i) = dir[j];
+		}
+	}
+
+	T det = static_cast<T>(1);
+
+	for (size_t i = 0; i < N; i++) {
+		det *= solver.upper(i, i);
+	}
+
+	return inv * (solver.permutation.isPositive() ? det : -det);
+}
 // Cofactor
+template<typename T, size_t N>
+constexpr Matrix<T, N, N> cofactor(const Matrix<T, N, N>& mat) {
+	return inverse(adjugate(mat));
+}
 // Eigenvalues
 // Eigenvectors
 // Decompose transform
@@ -1027,7 +1056,7 @@ constexpr Vector<T, N> operator--(Vector<T, N>& vec) {
 	return vec;
 }
 
-// Matrix multiplications
+// Matrix operations
 // With vector
 template<typename T, size_t NRow, size_t NCol>
 constexpr Vector<T, NRow> operator*(const Matrix<T, NRow, NCol>& mat, const Vector<T, NCol>& vec) {
@@ -1048,6 +1077,79 @@ constexpr Vector<T, NCol> operator*(const Vector<T, NRow>& vec, const Matrix<T, 
 	for (size_t j = 0; j < NCol; j++) {
 		for (size_t i = 0; i < NRow; i++) {
 			output[j] += vec[i] * mat(i, j);
+		}
+	}
+
+	return output;
+}
+// With scalar
+template<typename T, size_t NRow, size_t NCol, std::enable_if_t<std::is_integral<T>::value || std::is_floating_point<T>::value, bool> = true>
+constexpr Matrix<T, NRow, NCol> operator*(const Matrix<T, NRow, NCol>& a, T b) {
+	Matrix<T, NRow, NCol> output{};
+
+	for (size_t i = 0; i < NRow; i++) {
+		for (size_t j = 0; j < NCol; j++) {
+			output(i, j) = a(i, j) * b;
+		}
+	}
+
+	return output;
+}
+template<typename T, size_t NRow, size_t NCol, std::enable_if_t<std::is_integral<T>::value || std::is_floating_point<T>::value, bool> = true>
+constexpr Matrix<T, NRow, NCol> operator/(const Matrix<T, NRow, NCol>& a, T b) {
+	Matrix<T, NRow, NCol> output{};
+
+	for (size_t i = 0; i < NRow; i++) {
+		for (size_t j = 0; j < NCol; j++) {
+			output(i, j) = a(i, j) / b;
+		}
+	}
+
+	return output;
+}
+template<typename T, size_t NRow, size_t NCol, std::enable_if_t<std::is_integral<T>::value || std::is_floating_point<T>::value, bool> = true>
+constexpr Matrix<T, NRow, NCol> operator/(T a, const Matrix<T, NRow, NCol>& b) {
+	Matrix<T, NRow, NCol> output{};
+
+	for (size_t i = 0; i < NRow; i++) {
+		for (size_t j = 0; j < NCol; j++) {
+			output(i, j) = a / b(i, j);
+		}
+	}
+
+	return output;
+}
+template<typename T, size_t NRow, size_t NCol, std::enable_if_t<std::is_integral<T>::value || std::is_floating_point<T>::value, bool> = true>
+constexpr Matrix<T, NRow, NCol> operator+(const Matrix<T, NRow, NCol>& a, T b) {
+	Matrix<T, NRow, NCol> output{};
+
+	for (size_t i = 0; i < NRow; i++) {
+		for (size_t j = 0; j < NCol; j++) {
+			output(i, j) = a(i, j) + b;
+		}
+	}
+
+	return output;
+}
+template<typename T, size_t NRow, size_t NCol, std::enable_if_t<std::is_integral<T>::value || std::is_floating_point<T>::value, bool> = true>
+constexpr Matrix<T, NRow, NCol> operator-(const Matrix<T, NRow, NCol>& a, T b) {
+	Matrix<T, NRow, NCol> output{};
+
+	for (size_t i = 0; i < NRow; i++) {
+		for (size_t j = 0; j < NCol; j++) {
+			output(i, j) = a(i, j) - b;
+		}
+	}
+
+	return output;
+}
+template<typename T, size_t NRow, size_t NCol, std::enable_if_t<std::is_integral<T>::value || std::is_floating_point<T>::value, bool> = true>
+constexpr Matrix<T, NRow, NCol> operator-(T a, const Matrix<T, NRow, NCol>& b) {
+	Matrix<T, NRow, NCol> output{};
+
+	for (size_t i = 0; i < NRow; i++) {
+		for (size_t j = 0; j < NCol; j++) {
+			output(i, j) = a - b(i, j);
 		}
 	}
 
