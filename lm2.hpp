@@ -36,8 +36,8 @@ private:
 
 public:
 	constexpr Vector() = default;
-	constexpr Vector(const Vector<T, N>& lv) = default;
-	constexpr Vector(Vector<T, N>& rv) = default;
+	constexpr Vector(const Vector<T, N>& rv) = default;
+	constexpr Vector(Vector<T, N>& lv) = default;
 
 	constexpr Vector(std::initializer_list<T> l) : data{} {
 		size_t s = N < l.size() ? N : l.size();
@@ -77,8 +77,8 @@ private:
 
 public:
 	constexpr Matrix() = default;
-	constexpr Matrix(const Matrix<T, NRow, NCol>& lv) = default;
-	constexpr Matrix(Matrix<T, NRow, NCol>& rv) = default;
+	constexpr Matrix(const Matrix<T, NRow, NCol>& rv) = default;
+	constexpr Matrix(Matrix<T, NRow, NCol>& lv) = default;
 
 	constexpr Matrix(std::initializer_list<std::initializer_list<T>> l) : data{} {
 		size_t s = NRow < l.size() ? NRow : l.size();
@@ -142,6 +142,64 @@ struct quaternion_t {
 };
 
 using quaternion = quaternion_t<float>;
+
+// Permutation types
+template<typename T, size_t N>
+class Permutation1D {
+private:
+	T data[N] {};
+	bool isPositive = true;
+
+public:
+	constexpr Permutation1D(const Permutation1D<T, N>& rv) = default;
+	constexpr Permutation1D(Permutation1D<T, N>& lv) = default;
+
+	constexpr Permutation1D() : data{} {
+		for (size_t i = 0; i < N; i++) {
+			data[i] = i;
+		}
+	}
+
+	constexpr size_t size() const {
+		return N;
+	}
+
+	constexpr const T& operator[](size_t index) const {
+		return data[index];
+	}
+
+	constexpr void swap(size_t aIdx, size_t bIdx) {
+		std::swap(data[aIdx], data[bIdx]);
+		isPositive = !isPositive;
+	}
+
+	constexpr void move(size_t from, size_t to) {
+		if (from == to) {
+			return;
+		}
+		
+		T tmpVal = data[from];
+		if (from < to) {
+			for (size_t i = from; i < to; i++) {
+				data[i] = data[i + 1];
+			}
+
+			if ((to - from) % 2 == 0) {
+				isPositive = !isPositive;
+			}
+		}
+		else {
+			for (size_t i = from; i > to; i--) {
+				data[i] = data[i - 1];
+			}
+
+			if ((from - to) % 2 == 0) {
+				isPositive = !isPositive;
+			}
+		}
+		data[to] = tmpVal;
+	}
+};
 
 // Scalar math functions
 template<typename T>
