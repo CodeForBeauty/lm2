@@ -245,12 +245,38 @@ constexpr T tanScalar(T val) {
 }
 
 template<typename T>
+constexpr T arcSinScalar(T val) {
+	return std::asin(val);
+}
+template<typename T>
+constexpr T arcCosScalar(T val) {
+	return std::acos(val);
+}
+template<typename T>
+constexpr T arcTanScalar(T val) {
+	return std::atan(val);
+}
+
+template<typename T>
 constexpr T minScalar(T a, T b) noexcept {
 	return a < b ? a : b;
 }
 template<typename T>
 constexpr T maxScalar(T a, T b) noexcept {
 	return a > b ? a : b;
+}
+template<typename T>
+constexpr T clampScalar(T val, T low, T high) noexcept {
+	return minScalar(maxScalar(val, high), low);
+}
+
+template<typename T>
+constexpr T lerpScalar(T a, T b, float f) {
+	return a * f + (1.0f - f) * b;
+}
+template<typename T>
+constexpr T lerpScalar(T a, T b, double f) {
+	return a * f + (1.0 - f) * b;
 }
 
 // Basic math functions on vectors
@@ -380,7 +406,120 @@ template<typename T, size_t N>
 constexpr Vector<T, N> normalize(const Vector<T, N>& vec) {
 	return vec / magnitude(vec);
 }
+// Distance
+template<typename T, size_t N>
+constexpr T distanceSquared(const Vector<T, N>& a, const Vector<T, N>& b) {
+	return magnitudeSquared(a - b);
+}
+template<typename T, size_t N>
+constexpr T distance(const Vector<T, N>& a, const Vector<T, N>& b) {
+	return sqrtScalar(distanceSquared(a, b));
+}
+// Lerp
+template<typename T, size_t N>
+constexpr Vector<T, N> lerp(const Vector<T, N>& a, const Vector<T, N>& b, float f) {
+	Vector<T, N> output{};
 
+	for (size_t i = 0; i < N; i++) {
+		output[i] = lerpScalar(a[i], b[i], f);
+	}
+
+	return output;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N> lerp(const Vector<T, N>& a, const Vector<T, N>& b, double f) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = lerpScalar(a[i], b[i], f);
+	}
+
+	return output;
+}
+// Min
+template<typename T, size_t N>
+constexpr Vector<T, N> min(const Vector<T, N>& a, const Vector<T, N>& b) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = minScalar(a[i], b[i]);
+	}
+
+	return output;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N> min(const Vector<T, N>& a, T b) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = minScalar(a[i], b);
+	}
+
+	return output;
+}
+// Max
+template<typename T, size_t N>
+constexpr Vector<T, N> max(const Vector<T, N>& a, const Vector<T, N>& b) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = maxScalar(a[i], b[i]);
+	}
+
+	return output;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N> max(const Vector<T, N>& a, T b) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = maxScalar(a[i], b);
+	}
+
+	return output;
+}
+// Clamp
+template<typename T, size_t N>
+constexpr Vector<T, N> clamp(const Vector<T, N>& a, const Vector<T, N>& b) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = clampScalar(a[i], b[i]);
+	}
+
+	return output;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N> clamp(const Vector<T, N>& a, T b) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = clampScalar(a[i], b);
+	}
+
+	return output;
+}
+// Angle
+template<typename T, size_t N>
+constexpr T angle(const Vector<T, N>& a, const Vector<T, N>& b) {
+	return arcCosScalar(dot(a, b) / (magnitude(a) * magnitude(b)));
+}
+// Reflect
+template<typename T, size_t N>
+constexpr Vector<T, N> reflect(const Vector<T, N>& v, const Vector<T, N> n) {
+	return v - 2 * dot(v, n) * n;
+}
+// TODO: Add refract
+// Project
+template<typename T, size_t N>
+constexpr Vector<T, N> project(const Vector<T, N>& a, const Vector<T, N>& b) {
+	return (dot(a, b) / dot(b, b)) * b;
+}
+// Reject
+template<typename T, size_t N>
+constexpr Vector<T, N> reject(const Vector<T, N>& a, const Vector<T, N>& b) {
+	return a - project(a, b);
+}
 // Matrix functions
 // Get identity Matrices
 template<typename T, size_t N>
@@ -913,6 +1052,35 @@ constexpr Vector<T, N> operator/(const Vector<T, N>& a, T b) {
 
 	for (size_t i = 0; i < N; i++) {
 		output[i] = a[i] / b;
+	}
+
+	return output;
+}
+
+template<typename T, size_t N>
+constexpr Vector<T, N> operator+(T a, const Vector<T, N>& b) {
+	return b + a;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N> operator-(T a, const Vector<T, N>& b) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = a - b[i];
+	}
+
+	return output;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N> operator*(T a, const Vector<T, N>& b) {
+	return b * a;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N> operator/(T a, const Vector<T, N>& b) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = a / b[i];
 	}
 
 	return output;
