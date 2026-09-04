@@ -173,6 +173,9 @@ public:
 	}
 
 	constexpr void swap(size_t aIdx, size_t bIdx) {
+		if (aIdx == bIdx) {
+			return;
+		}
 		std::swap(data[aIdx], data[bIdx]);
 		sign = !sign;
 	}
@@ -188,7 +191,7 @@ public:
 				data[i] = data[i + 1];
 			}
 
-			if ((to - from) % 2 == 0) {
+			if ((to - from) % 2 != 0) {
 				sign = !sign;
 			}
 		}
@@ -197,7 +200,7 @@ public:
 				data[i] = data[i - 1];
 			}
 
-			if ((from - to) % 2 == 0) {
+			if ((from - to) % 2 != 0) {
 				sign = !sign;
 			}
 		}
@@ -546,8 +549,14 @@ constexpr PLUData<T, NRow, NCol> plu(const Matrix<T, NRow, NCol>& mat) {
 // Determinant
 template<typename T, size_t N>
 constexpr T determinant(const Matrix<T, N, N>& mat) {
-	// TODO: Implement generic version
-	return 0;
+	RowPermutMatrixPair<T, N, N> gauss = gaussElim(mat);
+
+	T det = static_cast<T>(1);
+
+	for (size_t i = 0; i < N; i++) {
+		det *= gauss.matrix(i, i);
+	}
+	return gauss.permutation.isPositive() ? det : -det;
 }
 template<typename T>
 constexpr T determinant(const Matrix<T, 2, 2>& mat) {
