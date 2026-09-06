@@ -3,6 +3,10 @@
 */
 #pragma once
 
+#ifndef LM2_NOEXCEPT
+#define LM2_NOEXCEPT noexcept
+#endif
+
 #ifndef LM2_NO_OUTPUT_FUNCTIONS
 #include <ostream>
 #endif
@@ -36,8 +40,8 @@ private:
 
 public:
 	constexpr Vector() = default;
-	constexpr Vector(const Vector<T, N>& rv) = default;
-	constexpr Vector(Vector<T, N>& lv) = default;
+	constexpr Vector(const Vector<T, N>& v) = default;
+	constexpr Vector(Vector<T, N>&& v) = default;
 
 	constexpr Vector(std::initializer_list<T> l) : data{} {
 		size_t s = N < l.size() ? N : l.size();
@@ -77,8 +81,8 @@ private:
 
 public:
 	constexpr Matrix() = default;
-	constexpr Matrix(const Matrix<T, NRow, NCol>& rv) = default;
-	constexpr Matrix(Matrix<T, NRow, NCol>& lv) = default;
+	constexpr Matrix(const Matrix<T, NRow, NCol>& m) = default;
+	constexpr Matrix(Matrix<T, NRow, NCol>&& m) = default;
 
 	constexpr Matrix(std::initializer_list<std::initializer_list<T>> l) : data{} {
 		size_t s = NRow < l.size() ? NRow : l.size();
@@ -135,7 +139,7 @@ public:
 };
 
 
-// Quaternion types
+// Rotation types
 template<typename T>
 struct quaternion_t {
 	T w, x, y, z;
@@ -151,8 +155,8 @@ private:
 	bool sign = true;
 
 public:
-	constexpr Permutation1D(const Permutation1D<N>& rv) = default;
-	constexpr Permutation1D(Permutation1D<N>& lv) = default;
+	constexpr Permutation1D(const Permutation1D<N>& p) = default;
+	constexpr Permutation1D(Permutation1D<N>&& p) = default;
 
 	constexpr Permutation1D() : data{} {
 		for (size_t i = 0; i < N; i++) {
@@ -210,119 +214,128 @@ public:
 
 // Scalar math functions
 template<typename T>
-constexpr T degreesToRadians(T degrees) {
+constexpr bool equalScalar(T a, T b, T epsilon = EPSILON<T>) LM2_NOEXCEPT {
+	return absScalar(a - b) <= epsilon;
+}
+
+template<typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
+constexpr T degreesToRadians(T degrees) LM2_NOEXCEPT {
 	return degrees * PIRAD<T>;
 }
-template<typename T>
-constexpr T radiansToDegrees(T radians) {
+template<typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
+constexpr T radiansToDegrees(T radians) LM2_NOEXCEPT {
 	return radians / PIRAD<T>;
 }
 
 template<typename T>
-constexpr T sqrtScalar(T val) {
+constexpr T sqrtScalar(T val) LM2_NOEXCEPT {
 	return std::sqrt(val);
 }
-template<typename T>
-constexpr T absScalar(T val) noexcept {
+template<typename T, std::enable_if_t<std::is_signed<T>::value, bool> = true>
+constexpr T absScalar(T val) LM2_NOEXCEPT {
 	return std::abs(val);
 }
 template<typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
-constexpr T fmodScalar(T val, T mod) {
+constexpr T fmodScalar(T val, T mod) LM2_NOEXCEPT {
 	return std::fmod(val, mod);
 }
 
 template<typename T>
-constexpr T sinScalar(T val) {
+constexpr T sinScalar(T val) LM2_NOEXCEPT {
 	return std::sin(val);
 }
 template<typename T>
-constexpr T cosScalar(T val) {
+constexpr T cosScalar(T val) LM2_NOEXCEPT {
 	return std::cos(val);
 }
 template<typename T>
-constexpr T tanScalar(T val) {
+constexpr T tanScalar(T val) LM2_NOEXCEPT {
 	return std::tan(val);
 }
 
 template<typename T>
-constexpr T arcSinScalar(T val) {
+constexpr T arcSinScalar(T val) LM2_NOEXCEPT {
 	return std::asin(val);
 }
 template<typename T>
-constexpr T arcCosScalar(T val) {
+constexpr T arcCosScalar(T val) LM2_NOEXCEPT {
 	return std::acos(val);
 }
 template<typename T>
-constexpr T arcTanScalar(T val) {
+constexpr T arcTanScalar(T val) LM2_NOEXCEPT {
 	return std::atan(val);
 }
 
 template<typename T>
-constexpr T minScalar(T a, T b) noexcept {
+constexpr T minScalar(T a, T b) LM2_NOEXCEPT {
 	return a < b ? a : b;
 }
 template<typename T>
-constexpr T maxScalar(T a, T b) noexcept {
+constexpr T maxScalar(T a, T b) LM2_NOEXCEPT {
 	return a > b ? a : b;
 }
 template<typename T>
-constexpr T clampScalar(T val, T low, T high) noexcept {
-	return minScalar(maxScalar(val, high), low);
+constexpr T clampScalar(T val, T low, T high) LM2_NOEXCEPT {
+	return minScalar(maxScalar(val, low), high);
 }
 
-template<typename T>
-constexpr T lerpScalar(T a, T b, float f) {
-	return a * f + (1.0f - f) * b;
-}
-template<typename T>
-constexpr T lerpScalar(T a, T b, double f) {
-	return a * f + (1.0 - f) * b;
+template<typename T, typename FT, std::enable_if_t<std::is_floating_point<FT>::value, bool> = true>
+constexpr T lerpScalar(T a, T b, FT f) LM2_NOEXCEPT {
+	return static_cast<T>(static_cast<FT>(a) * f + (static_cast<FT>(1) - f) * static_cast<FT>(b));
 }
 
 template<typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
-constexpr T ceilScalar(T val) {
+constexpr T ceilScalar(T val) LM2_NOEXCEPT {
 	return std::ceil(val);
 }
 template<typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
-constexpr T floorScalar(T val) {
+constexpr T floorScalar(T val) LM2_NOEXCEPT {
 	return std::floor(val);
 }
 template<typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
-constexpr T roundScalar(T val) {
+constexpr T roundScalar(T val) LM2_NOEXCEPT {
 	return std::round(val);
 }
 
 template<typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
-constexpr T fractScalar(T val) {
+T fractScalar(T val) LM2_NOEXCEPT {
 	T whole;
 	return std::modf(val, &whole);
 }
 template<typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
-constexpr T signScalar(T val) {
-	return std::copysign(1, val);
+constexpr T fractScalarConst(T val) LM2_NOEXCEPT {
+	T whole = static_cast<long long>(val);
+	return val - whole;
+}
+template<typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
+constexpr T signScalar(T val) LM2_NOEXCEPT {
+	return std::copysign(static_cast<T>(1), val);
 }
 template<typename T, std::enable_if_t<std::is_integral<T>::value, bool> = true>
-constexpr T signScalar(T val) {
-	return (val > 0) - (val < 0);
+constexpr T signScalar(T val) LM2_NOEXCEPT {
+	return static_cast<T>(val > static_cast<T>(0)) - (val < static_cast<T>(0));
 }
 template<typename T>
-constexpr T stepScalar(T edge, T val) {
+constexpr T stepScalar(T edge, T val) LM2_NOEXCEPT {
 	return val >= edge;
 }
 template<typename T>
-constexpr T smoothstepScalar(T edge1, T edge2, T val) {
-	T t = clamp((edge1 - val) / (edge2 - edge1));
-	return t * t * (3 - 2 * t);
+constexpr T smoothstepScalar(T edge1, T edge2, T val) LM2_NOEXCEPT {
+	if (edge1 == edge2) {
+		return val >= edge2 ? static_cast<T>(1) : static_cast<T>(0);
+	}
+	T t = clampScalar((val - edge1) / (edge2 - edge1), static_cast<T>(0), static_cast<T>(1));
+	return t * t * (static_cast<T>(3) - static_cast<T>(2) * t);
 }
 
 
 // Basic math functions on vectors
 template<typename T, size_t N>
-constexpr Vector<T, N> degreesToRadians(const Vector<T, N>& vec) {
+constexpr Vector<T, N> degreesToRadians(const Vector<T, N>& vec) LM2_NOEXCEPT {
 	return vec * PIRAD<T>;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N> radiansToDegrees(const Vector<T, N>& vec) {
+constexpr Vector<T, N> radiansToDegrees(const Vector<T, N>& vec) LM2_NOEXCEPT {
 	return vec / PIRAD<T>;
 }
 
@@ -344,7 +357,7 @@ constexpr Vector<T, N> compFuncVector(const Vector<T, N>& vec, T (*func)(T)) {
 }
 
 template<typename T, size_t N>
-constexpr Vector<T, N> sqrtVector(const Vector<T, N>& vec) {
+constexpr Vector<T, N> sqrtVector(const Vector<T, N>& vec) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -354,7 +367,7 @@ constexpr Vector<T, N> sqrtVector(const Vector<T, N>& vec) {
 	return output;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N> absVector(const Vector<T, N>& vec) {
+constexpr Vector<T, N> absVector(const Vector<T, N>& vec) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -365,7 +378,7 @@ constexpr Vector<T, N> absVector(const Vector<T, N>& vec) {
 }
 
 template<typename T, size_t N>
-constexpr Vector<T, N> sinVector(const Vector<T, N>& vec) {
+constexpr Vector<T, N> sinVector(const Vector<T, N>& vec) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -375,7 +388,7 @@ constexpr Vector<T, N> sinVector(const Vector<T, N>& vec) {
 	return output;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N> cosVector(const Vector<T, N>& vec) {
+constexpr Vector<T, N> cosVector(const Vector<T, N>& vec) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -385,7 +398,7 @@ constexpr Vector<T, N> cosVector(const Vector<T, N>& vec) {
 	return output;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N> tanVector(const Vector<T, N>& vec) {
+constexpr Vector<T, N> tanVector(const Vector<T, N>& vec) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -399,7 +412,7 @@ constexpr Vector<T, N> tanVector(const Vector<T, N>& vec) {
 // Vector
 // Dot
 template<typename T, size_t N>
-constexpr T dot(const Vector<T, N>& a, const Vector<T, N>& b) {
+constexpr T dot(const Vector<T, N>& a, const Vector<T, N>& b) LM2_NOEXCEPT {
 	T output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -410,11 +423,11 @@ constexpr T dot(const Vector<T, N>& a, const Vector<T, N>& b) {
 }
 // Cross
 template<typename T>
-constexpr T cross(const Vector<T, 2>& a, const Vector<T, 2>& b) {
+constexpr T cross(const Vector<T, 2>& a, const Vector<T, 2>& b) LM2_NOEXCEPT {
 	return a[axes::x] * b[axes::y] - a[axes::y] * b[axes::x];
 }
 template<typename T>
-constexpr Vector<T, 3> cross(const Vector<T, 3>& a, const Vector<T, 3>& b) {
+constexpr Vector<T, 3> cross(const Vector<T, 3>& a, const Vector<T, 3>& b) LM2_NOEXCEPT {
 	return {
 		a[axes::y] * b[axes::z] - a[axes::z] * b[axes::y],
 		a[axes::z] * b[axes::x] - a[axes::x] * b[axes::z],
@@ -424,7 +437,7 @@ constexpr Vector<T, 3> cross(const Vector<T, 3>& a, const Vector<T, 3>& b) {
 // Magnitude
 // Squared
 template<typename T, size_t N>
-constexpr T magnitudeSquared(const Vector<T, N>& vec) {
+constexpr T magnitudeSquared(const Vector<T, N>& vec) LM2_NOEXCEPT {
 	T result{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -435,7 +448,7 @@ constexpr T magnitudeSquared(const Vector<T, N>& vec) {
 }
 // Normalized
 template<typename T, size_t N>
-constexpr T magnitude(const Vector<T, N>& vec) {
+constexpr T magnitude(const Vector<T, N>& vec) LM2_NOEXCEPT {
 	return sqrtScalar(magnitudeSquared(vec));
 }
 // Normalize
@@ -445,7 +458,7 @@ constexpr Vector<T, N> normalize(const Vector<T, N>& vec) {
 }
 // Distance
 template<typename T, size_t N>
-constexpr T distanceSquared(const Vector<T, N>& a, const Vector<T, N>& b) {
+constexpr T distanceSquared(const Vector<T, N>& a, const Vector<T, N>& b) LM2_NOEXCEPT {
 	return magnitudeSquared(a - b);
 }
 template<typename T, size_t N>
@@ -453,18 +466,8 @@ constexpr T distance(const Vector<T, N>& a, const Vector<T, N>& b) {
 	return sqrtScalar(distanceSquared(a, b));
 }
 // Lerp
-template<typename T, size_t N>
-constexpr Vector<T, N> lerp(const Vector<T, N>& a, const Vector<T, N>& b, float f) {
-	Vector<T, N> output{};
-
-	for (size_t i = 0; i < N; i++) {
-		output[i] = lerpScalar(a[i], b[i], f);
-	}
-
-	return output;
-}
-template<typename T, size_t N>
-constexpr Vector<T, N> lerp(const Vector<T, N>& a, const Vector<T, N>& b, double f) {
+template<typename T, size_t N, typename FT, std::enable_if_t<std::is_floating_point<FT>::value, bool> = true>
+constexpr Vector<T, N> lerp(const Vector<T, N>& a, const Vector<T, N>& b, FT f) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -475,7 +478,7 @@ constexpr Vector<T, N> lerp(const Vector<T, N>& a, const Vector<T, N>& b, double
 }
 // Min
 template<typename T, size_t N>
-constexpr Vector<T, N> min(const Vector<T, N>& a, const Vector<T, N>& b) {
+constexpr Vector<T, N> min(const Vector<T, N>& a, const Vector<T, N>& b) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -485,7 +488,7 @@ constexpr Vector<T, N> min(const Vector<T, N>& a, const Vector<T, N>& b) {
 	return output;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N> min(const Vector<T, N>& a, T b) {
+constexpr Vector<T, N> min(const Vector<T, N>& a, T b) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -496,7 +499,7 @@ constexpr Vector<T, N> min(const Vector<T, N>& a, T b) {
 }
 // Max
 template<typename T, size_t N>
-constexpr Vector<T, N> max(const Vector<T, N>& a, const Vector<T, N>& b) {
+constexpr Vector<T, N> max(const Vector<T, N>& a, const Vector<T, N>& b) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -506,7 +509,7 @@ constexpr Vector<T, N> max(const Vector<T, N>& a, const Vector<T, N>& b) {
 	return output;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N> max(const Vector<T, N>& a, T b) {
+constexpr Vector<T, N> max(const Vector<T, N>& a, T b) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -517,28 +520,28 @@ constexpr Vector<T, N> max(const Vector<T, N>& a, T b) {
 }
 // Clamp
 template<typename T, size_t N>
-constexpr Vector<T, N> clamp(const Vector<T, N>& a, const Vector<T, N>& b) {
+constexpr Vector<T, N> clamp(const Vector<T, N>& a, const Vector<T, N>& low, const Vector<T, N>& high) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
-		output[i] = clampScalar(a[i], b[i]);
+		output[i] = clampScalar(a[i], low[i], high[i]);
 	}
 
 	return output;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N> clamp(const Vector<T, N>& a, T b) {
+constexpr Vector<T, N> clamp(const Vector<T, N>& a, T low, T high) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
-		output[i] = clampScalar(a[i], b);
+		output[i] = clampScalar(a[i], low, high);
 	}
 
 	return output;
 }
 // Useful functions
 template<typename T, size_t N, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
-constexpr Vector<T, N> ceil(const Vector<T, N>& vec) {
+constexpr Vector<T, N> ceil(const Vector<T, N>& vec) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -548,7 +551,7 @@ constexpr Vector<T, N> ceil(const Vector<T, N>& vec) {
 	return output;
 }
 template<typename T, size_t N, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
-constexpr Vector<T, N> floor(const Vector<T, N>& vec) {
+constexpr Vector<T, N> floor(const Vector<T, N>& vec) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -558,7 +561,7 @@ constexpr Vector<T, N> floor(const Vector<T, N>& vec) {
 	return output;
 }
 template<typename T, size_t N, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
-constexpr Vector<T, N> round(const Vector<T, N>& vec) {
+constexpr Vector<T, N> round(const Vector<T, N>& vec) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -569,7 +572,7 @@ constexpr Vector<T, N> round(const Vector<T, N>& vec) {
 }
 
 template<typename T, size_t N, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
-constexpr Vector<T, N> fract(const Vector<T, N>& vec) {
+constexpr Vector<T, N> fract(const Vector<T, N>& vec) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -579,7 +582,7 @@ constexpr Vector<T, N> fract(const Vector<T, N>& vec) {
 	return output;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N> sign(const Vector<T, N>& vec) {
+constexpr Vector<T, N> sign(const Vector<T, N>& vec) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -589,41 +592,41 @@ constexpr Vector<T, N> sign(const Vector<T, N>& vec) {
 	return output;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N> step(T edge, const Vector<T, N>& vec) {
+constexpr Vector<T, N> step(T edge, const Vector<T, N>& vec) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
-		output[i] = step(edge, vec[i]);
+		output[i] = stepScalar(edge, vec[i]);
 	}
 
 	return output;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N> step(const Vector<T, N>& edge, const Vector<T, N>& vec) {
+constexpr Vector<T, N> step(const Vector<T, N>& edge, const Vector<T, N>& vec) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
-		output[i] = step(edge[i], vec[i]);
+		output[i] = stepScalar(edge[i], vec[i]);
 	}
 
 	return output;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N> smoothstep(T edge1, T edge2, const Vector<T, N>& vec) {
+constexpr Vector<T, N> smoothstep(T edge1, T edge2, const Vector<T, N>& vec) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
-		output[i] = step(edge1, edge2, vec[i]);
+		output[i] = smoothstepScalar(edge1, edge2, vec[i]);
 	}
 
 	return output;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N> smoothstep(const Vector<T, N>& edge1, const Vector<T, N>& edge2, const Vector<T, N>& vec) {
+constexpr Vector<T, N> smoothstep(const Vector<T, N>& edge1, const Vector<T, N>& edge2, const Vector<T, N>& vec) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
-		output[i] = step(edge1[i], edge2[i], vec[i]);
+		output[i] = smoothstepScalar(edge1[i], edge2[i], vec[i]);
 	}
 
 	return output;
@@ -635,8 +638,8 @@ constexpr T angle(const Vector<T, N>& a, const Vector<T, N>& b) {
 }
 // Reflect
 template<typename T, size_t N>
-constexpr Vector<T, N> reflect(const Vector<T, N>& v, const Vector<T, N> n) {
-	return v - 2 * dot(v, n) * n;
+constexpr Vector<T, N> reflect(const Vector<T, N>& v, const Vector<T, N> n) LM2_NOEXCEPT {
+	return v - static_cast<T>(2) * dot(v, n) * n;
 }
 // Refract
 template<typename T, size_t N>
@@ -660,7 +663,7 @@ constexpr Vector<T, N> reject(const Vector<T, N>& a, const Vector<T, N>& b) {
 // Matrix functions
 // Get identity Matrices
 template<typename T, size_t N>
-constexpr Matrix<T, N, N> identityMatrix() {
+constexpr Matrix<T, N, N> identityMatrix() LM2_NOEXCEPT {
 	Matrix<T, N, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -671,7 +674,7 @@ constexpr Matrix<T, N, N> identityMatrix() {
 }
 // Transpose
 template<typename T, size_t NRow, size_t NCol>
-constexpr Matrix<T, NCol, NRow> transpose(const Matrix<T, NRow, NCol>& mat) {
+constexpr Matrix<T, NCol, NRow> transpose(const Matrix<T, NRow, NCol>& mat) LM2_NOEXCEPT {
 	Matrix<T, NCol, NRow> output{};
 
 	for (size_t i = 0; i < NRow; i++) {
@@ -847,7 +850,7 @@ constexpr PLUData<T, NRow, NCol> plu(const Matrix<T, NRow, NCol>& mat) {
 
 	return output;
 }
-// Cholesky decomposition
+// Cholesky decomposition TODO
 // Determinant
 template<typename T, size_t N>
 constexpr T determinant(const Matrix<T, N, N>& mat) {
@@ -861,11 +864,11 @@ constexpr T determinant(const Matrix<T, N, N>& mat) {
 	return gauss.permutation.isPositive() ? det : -det;
 }
 template<typename T>
-constexpr T determinant(const Matrix<T, 2, 2>& mat) {
-	return (mat(0, 0) * mat(1, 1)) - (mat(0, 1) * mat(1, 0));
+constexpr T determinant(const Matrix<T, 2, 2>& mat) LM2_NOEXCEPT {
+	return (mat(axes::x, axes::x) * mat(axes::y, axes::y)) - (mat(axes::x, axes::y) * mat(axes::y, axes::x));
 }
 template<typename T>
-constexpr T determinant(const Matrix<T, 3, 3>& mat) {
+constexpr T determinant(const Matrix<T, 3, 3>& mat) LM2_NOEXCEPT {
 	return mat(axes::x, axes::x) * (mat(axes::y, axes::y) * mat(axes::z, axes::z) - mat(axes::z, axes::y) * mat(axes::y, axes::z))
 		- mat(axes::y, axes::x) * (mat(axes::x, axes::y) * mat(axes::z, axes::z) - mat(axes::z, axes::y) * mat(axes::x, axes::z))
 		+ mat(axes::z, axes::x) * (mat(axes::x, axes::y) * mat(axes::y, axes::z) - mat(axes::y, axes::y) * mat(axes::x, axes::z));
@@ -921,13 +924,14 @@ template<typename T, size_t N>
 constexpr Matrix<T, N, N> cofactor(const Matrix<T, N, N>& mat) {
 	return inverse(adjugate(mat));
 }
-// Eigenvalues
-// Eigenvectors
-// Decompose transform
+// Eigenvalues TODO
+// Eigenvectors TODO
+// Decompose transform TODO
+// QR decomposition TODO
 
 // Position Matrices
 template<typename T, size_t N>
-constexpr Matrix<T, N + 1, N + 1> positionMatrix(const Vector<T, N>& pos) {
+constexpr Matrix<T, N + 1, N + 1> positionMatrix(const Vector<T, N>& pos) LM2_NOEXCEPT {
 	Matrix<T, N + 1, N + 1> output = identityMatrix<T, N + 1>();
 
 	for (size_t i = 0; i < N; i++) {
@@ -938,7 +942,7 @@ constexpr Matrix<T, N + 1, N + 1> positionMatrix(const Vector<T, N>& pos) {
 }
 
 template<typename T, size_t N>
-constexpr Matrix<T, N, N> scaleMatrix(const Vector<T, N>& scale) {
+constexpr Matrix<T, N, N> scaleMatrix(const Vector<T, N>& scale) LM2_NOEXCEPT {
 	Matrix<T, N, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -950,7 +954,7 @@ constexpr Matrix<T, N, N> scaleMatrix(const Vector<T, N>& scale) {
 
 // Projection Matrices
 template<typename T>
-constexpr Matrix<T, 4, 4> orthographicProjection(T left, T right, T bottom, T top, T near, T far) {
+constexpr Matrix<T, 4, 4> orthographicProjection(T left, T right, T bottom, T top, T near, T far) LM2_NOEXCEPT {
 	T width = right - left;
 	T height = top - bottom;
 	T ratio = height / width;
@@ -962,7 +966,7 @@ constexpr Matrix<T, 4, 4> orthographicProjection(T left, T right, T bottom, T to
 	};
 }
 template<typename T>
-constexpr Matrix<T, 4, 4> orthographicProjection(T width, T height, T near, T far) {
+constexpr Matrix<T, 4, 4> orthographicProjection(T width, T height, T near, T far) LM2_NOEXCEPT {
 	return {
 		{ static_cast<T>(2) / width * (height / width), static_cast<T>(0),          static_cast<T>(0),                 static_cast<T>(0) },
 		{ static_cast<T>(0),                            static_cast<T>(2) / height, static_cast<T>(0),                 static_cast<T>(0) },
@@ -972,7 +976,10 @@ constexpr Matrix<T, 4, 4> orthographicProjection(T width, T height, T near, T fa
 }
 // ratio = height / width
 template<typename T>
-constexpr Matrix<T, 4, 4> perspectiveProjection(T fov, T near, T far, T ratio) {
+constexpr Matrix<T, 4, 4> perspectiveProjection(T fov, T near, T far, T ratio) LM2_NOEXCEPT {
+	if (fov == static_cast<T>(0)) {
+		return identityMatrix<T, 4, 4>();
+	}
 	T s = static_cast<T>(1) / tanScalar(degreesToRadians(fov / static_cast<T>(2)));
 	return {
 		{ s * ratio,         static_cast<T>(0), static_cast<T>(0),           static_cast<T>(0) },
@@ -984,7 +991,7 @@ constexpr Matrix<T, 4, 4> perspectiveProjection(T fov, T near, T far, T ratio) {
 
 // Rotation Matrices
 template<typename T>
-constexpr Matrix<T, 2, 2> rotation2DMatrix(T degrees) {
+constexpr Matrix<T, 2, 2> rotation2DMatrix(T degrees) LM2_NOEXCEPT {
 	T rad = degreesToRadians(degrees);
 	T sin = sinScalar(rad);
 	T cos = cosScalar(rad);
@@ -1002,7 +1009,7 @@ enum class Rotation3DAxisOrder {
 	ZYX,
 };
 template<typename T>
-constexpr Matrix<T, 3, 3> eulerRotation3DMatrix(const Vector<T, 3>& degrees, const Rotation3DAxisOrder axisOrder = Rotation3DAxisOrder::YXZ) {
+constexpr Matrix<T, 3, 3> eulerRotation3DMatrix(const Vector<T, 3>& degrees, const Rotation3DAxisOrder axisOrder = Rotation3DAxisOrder::YXZ) LM2_NOEXCEPT {
 	Vector<T, 3> rad{ degreesToRadians(degrees) };
 	Vector<T, 3> sin{ sinVector(rad) };
 	Vector<T, 3> cos{ cosVector(rad) };
@@ -1043,7 +1050,7 @@ constexpr Matrix<T, 3, 3> eulerRotation3DMatrix(const Vector<T, 3>& degrees, con
 
 // View matrix
 template<typename T>
-constexpr Matrix<T, 4, 4> viewMatrix(const Vector<T, 3>& eye, const Vector<T, 3>& at, const Vector<T, 3>& up) {
+constexpr Matrix<T, 4, 4> viewMatrix(const Vector<T, 3>& eye, const Vector<T, 3>& at, const Vector<T, 3>& up) LM2_NOEXCEPT {
 	Vector<T, 3> forward = normalize(at - eye);
 	Vector<T, 3> right = normalize(cross(forward, up));
 	Vector<T, 3> upDir = cross(forward, right);
@@ -1085,12 +1092,8 @@ quaternion_t<T> inverse(quaternion_t<T> quat) {
 
 
 // Equal
-template<typename T>
-constexpr bool equal(T a, T b, T epsilon = EPSILON<T>) noexcept {
-	return absScalar(a - b) <= epsilon;
-}
 template<typename T, size_t N>
-constexpr bool equal(const Vector<T, N>& a, const Vector<T, N>& b, T epsilon = EPSILON<T>) noexcept {
+constexpr bool equal(const Vector<T, N>& a, const Vector<T, N>& b, T epsilon = EPSILON<T>) LM2_NOEXCEPT {
 	for (size_t i = 0; i < N; i++) {
 		if (absScalar(a[i] - b[i]) > epsilon) {
 			return false;
@@ -1100,7 +1103,7 @@ constexpr bool equal(const Vector<T, N>& a, const Vector<T, N>& b, T epsilon = E
 	return true;
 }
 template<typename T, size_t N>
-constexpr bool equal(const Vector<T, N>& a, T b, T epsilon = EPSILON<T>) noexcept {
+constexpr bool equal(const Vector<T, N>& a, T b, T epsilon = EPSILON<T>) LM2_NOEXCEPT {
 	for (size_t i = 0; i < N; i++) {
 		if (absScalar(a[i] - b) > epsilon) {
 			return false;
@@ -1113,7 +1116,7 @@ constexpr bool equal(const Vector<T, N>& a, T b, T epsilon = EPSILON<T>) noexcep
 // Operator overloads
 // Component-vise operations
 template<typename T, size_t N>
-constexpr Vector<T, N> operator+(const Vector<T, N>& a, const Vector<T, N>& b) {
+constexpr Vector<T, N> operator+(const Vector<T, N>& a, const Vector<T, N>& b) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -1123,7 +1126,7 @@ constexpr Vector<T, N> operator+(const Vector<T, N>& a, const Vector<T, N>& b) {
 	return output;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N> operator-(const Vector<T, N>& a, const Vector<T, N>& b) {
+constexpr Vector<T, N> operator-(const Vector<T, N>& a, const Vector<T, N>& b) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -1133,7 +1136,7 @@ constexpr Vector<T, N> operator-(const Vector<T, N>& a, const Vector<T, N>& b) {
 	return output;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N> operator*(const Vector<T, N>& a, const Vector<T, N>& b) {
+constexpr Vector<T, N> operator*(const Vector<T, N>& a, const Vector<T, N>& b) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -1154,7 +1157,7 @@ constexpr Vector<T, N> operator/(const Vector<T, N>& a, const Vector<T, N>& b) {
 }
 // Scalar operations
 template<typename T, size_t N>
-constexpr Vector<T, N> operator+(const Vector<T, N>& a, T b) {
+constexpr Vector<T, N> operator+(const Vector<T, N>& a, T b) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -1164,7 +1167,7 @@ constexpr Vector<T, N> operator+(const Vector<T, N>& a, T b) {
 	return output;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N> operator-(const Vector<T, N>& a, T b) {
+constexpr Vector<T, N> operator-(const Vector<T, N>& a, T b) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -1174,7 +1177,7 @@ constexpr Vector<T, N> operator-(const Vector<T, N>& a, T b) {
 	return output;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N> operator*(const Vector<T, N>& a, T b) {
+constexpr Vector<T, N> operator*(const Vector<T, N>& a, T b) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -1195,11 +1198,11 @@ constexpr Vector<T, N> operator/(const Vector<T, N>& a, T b) {
 }
 
 template<typename T, size_t N>
-constexpr Vector<T, N> operator+(T a, const Vector<T, N>& b) {
+constexpr Vector<T, N> operator+(T a, const Vector<T, N>& b) LM2_NOEXCEPT {
 	return b + a;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N> operator-(T a, const Vector<T, N>& b) {
+constexpr Vector<T, N> operator-(T a, const Vector<T, N>& b) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -1209,7 +1212,7 @@ constexpr Vector<T, N> operator-(T a, const Vector<T, N>& b) {
 	return output;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N> operator*(T a, const Vector<T, N>& b) {
+constexpr Vector<T, N> operator*(T a, const Vector<T, N>& b) LM2_NOEXCEPT {
 	return b * a;
 }
 template<typename T, size_t N>
@@ -1224,7 +1227,7 @@ constexpr Vector<T, N> operator/(T a, const Vector<T, N>& b) {
 }
 // Modulo
 template<typename T, size_t N, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
-constexpr Vector<T, N> operator%(const Vector<T, N>& a, T b) {
+constexpr Vector<T, N> operator%(const Vector<T, N>& a, T b) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -1266,7 +1269,7 @@ constexpr Vector<T, N> operator%(const Vector<T, N>& a, const Vector<T, N>& b) {
 }
 // Compound assign operations
 template<typename T, size_t N>
-constexpr Vector<T, N>& operator+=(Vector<T, N>& a, const Vector<T, N>& b) {
+constexpr Vector<T, N>& operator+=(Vector<T, N>& a, const Vector<T, N>& b) LM2_NOEXCEPT {
 	for (size_t i = 0; i < N; i++) {
 		a[i] += b[i];
 	}
@@ -1274,7 +1277,7 @@ constexpr Vector<T, N>& operator+=(Vector<T, N>& a, const Vector<T, N>& b) {
 	return a;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N>& operator-=(Vector<T, N>& a, const Vector<T, N>& b) {
+constexpr Vector<T, N>& operator-=(Vector<T, N>& a, const Vector<T, N>& b) LM2_NOEXCEPT {
 	for (size_t i = 0; i < N; i++) {
 		a[i] -= b[i];
 	}
@@ -1282,7 +1285,7 @@ constexpr Vector<T, N>& operator-=(Vector<T, N>& a, const Vector<T, N>& b) {
 	return a;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N>& operator*=(Vector<T, N>& a, const Vector<T, N>& b) {
+constexpr Vector<T, N>& operator*=(Vector<T, N>& a, const Vector<T, N>& b) LM2_NOEXCEPT {
 	for (size_t i = 0; i < N; i++) {
 		a[i] *= b[i];
 	}
@@ -1299,7 +1302,7 @@ constexpr Vector<T, N>& operator/=(Vector<T, N>& a, const Vector<T, N>& b) {
 }
 // Compound assign operations with scalar
 template<typename T, size_t N>
-constexpr Vector<T, N>& operator+=(Vector<T, N>& a, T b) {
+constexpr Vector<T, N>& operator+=(Vector<T, N>& a, T b) LM2_NOEXCEPT {
 	for (size_t i = 0; i < N; i++) {
 		a[i] += b;
 	}
@@ -1307,7 +1310,7 @@ constexpr Vector<T, N>& operator+=(Vector<T, N>& a, T b) {
 	return a;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N>& operator-=(Vector<T, N>& a, T b) {
+constexpr Vector<T, N>& operator-=(Vector<T, N>& a, T b) LM2_NOEXCEPT {
 	for (size_t i = 0; i < N; i++) {
 		a[i] -= b;
 	}
@@ -1315,7 +1318,7 @@ constexpr Vector<T, N>& operator-=(Vector<T, N>& a, T b) {
 	return a;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N>& operator*=(Vector<T, N>& a, T b) {
+constexpr Vector<T, N>& operator*=(Vector<T, N>& a, T b) LM2_NOEXCEPT {
 	for (size_t i = 0; i < N; i++) {
 		a[i] *= b;
 	}
@@ -1333,7 +1336,7 @@ constexpr Vector<T, N>& operator/=(Vector<T, N>& a, T b) {
 // Unary operations
 // Negate
 template<typename T, size_t N>
-constexpr Vector<T, N> operator-(const Vector<T, N>& vec) {
+constexpr Vector<T, N> operator-(const Vector<T, N>& vec) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -1344,7 +1347,7 @@ constexpr Vector<T, N> operator-(const Vector<T, N>& vec) {
 }
 // Increment
 template<typename T, size_t N>
-constexpr Vector<T, N> operator++(Vector<T, N>& vec) {
+constexpr Vector<T, N> operator++(Vector<T, N>& vec) LM2_NOEXCEPT {
 	for (size_t i = 0; i < N; i++) {
 		++vec[i];
 	}
@@ -1353,7 +1356,7 @@ constexpr Vector<T, N> operator++(Vector<T, N>& vec) {
 }
 // Decrement
 template<typename T, size_t N>
-constexpr Vector<T, N> operator--(Vector<T, N>& vec) {
+constexpr Vector<T, N> operator--(Vector<T, N>& vec) LM2_NOEXCEPT {
 	for (size_t i = 0; i < N; i++) {
 		--vec[i];
 	}
@@ -1364,7 +1367,7 @@ constexpr Vector<T, N> operator--(Vector<T, N>& vec) {
 // Matrix operations
 // With vector
 template<typename T, size_t NRow, size_t NCol>
-constexpr Vector<T, NRow> operator*(const Matrix<T, NRow, NCol>& mat, const Vector<T, NCol>& vec) {
+constexpr Vector<T, NRow> operator*(const Matrix<T, NRow, NCol>& mat, const Vector<T, NCol>& vec) LM2_NOEXCEPT {
 	Vector<T, NRow> output{};
 
 	for (size_t i = 0; i < NRow; i++) {
@@ -1376,7 +1379,7 @@ constexpr Vector<T, NRow> operator*(const Matrix<T, NRow, NCol>& mat, const Vect
 	return output;
 }
 template<typename T, size_t NRow, size_t NCol>
-constexpr Vector<T, NCol> operator*(const Vector<T, NRow>& vec, const Matrix<T, NRow, NCol>& mat) {
+constexpr Vector<T, NCol> operator*(const Vector<T, NRow>& vec, const Matrix<T, NRow, NCol>& mat) LM2_NOEXCEPT {
 	Vector<T, NCol> output{};
 
 	for (size_t j = 0; j < NCol; j++) {
@@ -1389,7 +1392,7 @@ constexpr Vector<T, NCol> operator*(const Vector<T, NRow>& vec, const Matrix<T, 
 }
 // With scalar
 template<typename T, size_t NRow, size_t NCol, std::enable_if_t<std::is_integral<T>::value || std::is_floating_point<T>::value, bool> = true>
-constexpr Matrix<T, NRow, NCol> operator*(const Matrix<T, NRow, NCol>& a, T b) {
+constexpr Matrix<T, NRow, NCol> operator*(const Matrix<T, NRow, NCol>& a, T b) LM2_NOEXCEPT {
 	Matrix<T, NRow, NCol> output{};
 
 	for (size_t i = 0; i < NRow; i++) {
@@ -1425,7 +1428,7 @@ constexpr Matrix<T, NRow, NCol> operator/(T a, const Matrix<T, NRow, NCol>& b) {
 	return output;
 }
 template<typename T, size_t NRow, size_t NCol, std::enable_if_t<std::is_integral<T>::value || std::is_floating_point<T>::value, bool> = true>
-constexpr Matrix<T, NRow, NCol> operator+(const Matrix<T, NRow, NCol>& a, T b) {
+constexpr Matrix<T, NRow, NCol> operator+(const Matrix<T, NRow, NCol>& a, T b) LM2_NOEXCEPT {
 	Matrix<T, NRow, NCol> output{};
 
 	for (size_t i = 0; i < NRow; i++) {
@@ -1437,7 +1440,7 @@ constexpr Matrix<T, NRow, NCol> operator+(const Matrix<T, NRow, NCol>& a, T b) {
 	return output;
 }
 template<typename T, size_t NRow, size_t NCol, std::enable_if_t<std::is_integral<T>::value || std::is_floating_point<T>::value, bool> = true>
-constexpr Matrix<T, NRow, NCol> operator-(const Matrix<T, NRow, NCol>& a, T b) {
+constexpr Matrix<T, NRow, NCol> operator-(const Matrix<T, NRow, NCol>& a, T b) LM2_NOEXCEPT {
 	Matrix<T, NRow, NCol> output{};
 
 	for (size_t i = 0; i < NRow; i++) {
@@ -1449,7 +1452,7 @@ constexpr Matrix<T, NRow, NCol> operator-(const Matrix<T, NRow, NCol>& a, T b) {
 	return output;
 }
 template<typename T, size_t NRow, size_t NCol, std::enable_if_t<std::is_integral<T>::value || std::is_floating_point<T>::value, bool> = true>
-constexpr Matrix<T, NRow, NCol> operator-(T a, const Matrix<T, NRow, NCol>& b) {
+constexpr Matrix<T, NRow, NCol> operator-(T a, const Matrix<T, NRow, NCol>& b) LM2_NOEXCEPT {
 	Matrix<T, NRow, NCol> output{};
 
 	for (size_t i = 0; i < NRow; i++) {
@@ -1462,7 +1465,7 @@ constexpr Matrix<T, NRow, NCol> operator-(T a, const Matrix<T, NRow, NCol>& b) {
 }
 // With matrix
 template<typename T, size_t NRow, size_t NCol, size_t NRow1>
-constexpr Matrix<T, NRow1, NCol> operator*(const Matrix<T, NRow, NCol>& a, const Matrix<T, NRow1, NRow>& b) {
+constexpr Matrix<T, NRow1, NCol> operator*(const Matrix<T, NRow, NCol>& a, const Matrix<T, NRow1, NRow>& b) LM2_NOEXCEPT {
 	Matrix<T, NRow1, NCol> output{};
 
 	for (size_t i = 0; i < NRow1; i++) {
@@ -1484,7 +1487,7 @@ quaternion_t<T> operator-(quaternion_t<T> quat) {
 
 // Permutations
 template<typename T, size_t N>
-constexpr Vector<T, N> operator*(const Permutation1D<N>& perm, const Vector<T, N>& vec) {
+constexpr Vector<T, N> operator*(const Permutation1D<N>& perm, const Vector<T, N>& vec) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -1494,12 +1497,12 @@ constexpr Vector<T, N> operator*(const Permutation1D<N>& perm, const Vector<T, N
 	return output;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N> operator*(const Vector<T, N>& vec, const Permutation1D<N>& perm) {
+constexpr Vector<T, N> operator*(const Vector<T, N>& vec, const Permutation1D<N>& perm) LM2_NOEXCEPT {
 	return perm * vec;
 }
 
 template<typename T, size_t NRow, size_t NCol>
-constexpr Matrix<T, NRow, NCol> operator*(const Matrix<T, NRow, NCol>& mat, const Permutation1D<NCol>& perm) {
+constexpr Matrix<T, NRow, NCol> operator*(const Matrix<T, NRow, NCol>& mat, const Permutation1D<NCol>& perm) LM2_NOEXCEPT {
 	Matrix<T, NRow, NCol> output{};
 
 	for (size_t i = 0; i < NRow; i++) {
@@ -1511,7 +1514,7 @@ constexpr Matrix<T, NRow, NCol> operator*(const Matrix<T, NRow, NCol>& mat, cons
 	return output;
 }
 template<typename T, size_t NRow, size_t NCol>
-constexpr Matrix<T, NRow, NCol> operator*(const Permutation1D<NCol>& perm, const Matrix<T, NRow, NCol>& mat) {
+constexpr Matrix<T, NRow, NCol> operator*(const Permutation1D<NCol>& perm, const Matrix<T, NRow, NCol>& mat) LM2_NOEXCEPT {
 	Matrix<T, NRow, NCol> output{};
 
 	for (size_t i = 0; i < NRow; i++) {
