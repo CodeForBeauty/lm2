@@ -536,6 +536,98 @@ constexpr Vector<T, N> clamp(const Vector<T, N>& a, T b) {
 
 	return output;
 }
+// Useful functions
+template<typename T, size_t N, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
+constexpr Vector<T, N> ceil(const Vector<T, N>& vec) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = ceilScalar(vec[i]);
+	}
+
+	return output;
+}
+template<typename T, size_t N, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
+constexpr Vector<T, N> floor(const Vector<T, N>& vec) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = floorScalar(vec[i]);
+	}
+
+	return output;
+}
+template<typename T, size_t N, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
+constexpr Vector<T, N> round(const Vector<T, N>& vec) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = roundScalar(vec[i]);
+	}
+
+	return output;
+}
+
+template<typename T, size_t N, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
+constexpr Vector<T, N> fract(const Vector<T, N>& vec) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = fractScalarec(vec[i]);
+	}
+
+	return output;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N> sign(const Vector<T, N>& vec) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = signScalar(vec[i]);
+	}
+
+	return output;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N> step(T edge, const Vector<T, N>& vec) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = step(edge, vec[i]);
+	}
+
+	return output;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N> step(const Vector<T, N>& edge, const Vector<T, N>& vec) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = step(edge[i], vec[i]);
+	}
+
+	return output;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N> smoothstep(T edge1, T edge2, const Vector<T, N>& vec) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = step(edge1, edge2, vec[i]);
+	}
+
+	return output;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N> smoothstep(const Vector<T, N>& edge1, const Vector<T, N>& edge2, const Vector<T, N>& vec) {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = step(edge1[i], edge2[i], vec[i]);
+	}
+
+	return output;
+}
 // Angle
 template<typename T, size_t N>
 constexpr T angle(const Vector<T, N>& a, const Vector<T, N>& b) {
