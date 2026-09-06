@@ -279,6 +279,43 @@ constexpr T lerpScalar(T a, T b, double f) {
 	return a * f + (1.0 - f) * b;
 }
 
+template<typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
+constexpr T ceilScalar(T val) {
+	return std::ceil(val);
+}
+template<typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
+constexpr T floorScalar(T val) {
+	return std::floor(val);
+}
+template<typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
+constexpr T roundScalar(T val) {
+	return std::round(val);
+}
+
+template<typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
+constexpr T fractScalar(T val) {
+	T whole;
+	return std::modf(val, &whole);
+}
+template<typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
+constexpr T signScalar(T val) {
+	return std::copysign(1, val);
+}
+template<typename T, std::enable_if_t<std::is_integral<T>::value, bool> = true>
+constexpr T signScalar(T val) {
+	return (val > 0) - (val < 0);
+}
+template<typename T>
+constexpr T stepScalar(T edge, T val) {
+	return val >= edge;
+}
+template<typename T>
+constexpr T smoothstepScalar(T edge1, T edge2, T val) {
+	T t = clamp((edge1 - val) / (edge2 - edge1));
+	return t * t * (3 - 2 * t);
+}
+
+
 // Basic math functions on vectors
 template<typename T, size_t N>
 constexpr Vector<T, N> degreesToRadians(const Vector<T, N>& vec) {
