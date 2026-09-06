@@ -638,7 +638,15 @@ template<typename T, size_t N>
 constexpr Vector<T, N> reflect(const Vector<T, N>& v, const Vector<T, N> n) {
 	return v - 2 * dot(v, n) * n;
 }
-// TODO: Add refract
+// Refract
+template<typename T, size_t N>
+constexpr Vector<T, N> refract(const Vector<T, N>& normal, const Vector<T, N>& incident, T n1, T n2) {
+	T r = n1 / n2;
+	T cosI = dot(-normal, incident);
+	T sinT2 = r * r * (static_cast<T>(1) - cosI * cosI);
+	T cosT = sqrtScalar(maxScalar(static_cast<T>(1) - sinT2, static_cast<T>(0)));
+	return r * incident + (r * cosI - cosT) * normal;
+}
 // Project
 template<typename T, size_t N>
 constexpr Vector<T, N> project(const Vector<T, N>& a, const Vector<T, N>& b) {
