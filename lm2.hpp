@@ -328,6 +328,19 @@ constexpr T smoothstepScalar(T edge1, T edge2, T val) LM2_NOEXCEPT {
 	return t * t * (static_cast<T>(3) - static_cast<T>(2) * t);
 }
 
+template<typename T>
+constexpr T powScalar(T x, T y) LM2_NOEXCEPT {
+	return std::pow(x, y);
+}
+template<typename T>
+constexpr T expScalar(T val) LM2_NOEXCEPT {
+	return std::exp(val);
+}
+template<typename T>
+constexpr T exp2Scalar(T x, T y) LM2_NOEXCEPT {
+	return std::exp2(x, y);
+}
+
 
 // Basic math functions on vectors
 template<typename T, size_t N>
@@ -627,6 +640,57 @@ constexpr Vector<T, N> smoothstep(const Vector<T, N>& edge1, const Vector<T, N>&
 
 	for (size_t i = 0; i < N; i++) {
 		output[i] = smoothstepScalar(edge1[i], edge2[i], vec[i]);
+	}
+
+	return output;
+}
+
+template<typename T, size_t N>
+constexpr Vector<T, N> pow(const Vector<T, N>& x, T y) LM2_NOEXCEPT {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = powScalar(x[i], y);
+	}
+
+	return output;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N> pow(T x, const Vector<T, N>& y) LM2_NOEXCEPT {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = powScalar(x, y[i]);
+	}
+
+	return output;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N> exp(const Vector<T, N>& vec) LM2_NOEXCEPT {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = expScalar(vec[i]);
+	}
+
+	return output;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N> exp2(const Vector<T, N>& x, T y) LM2_NOEXCEPT {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = exp2Scalar(x[i], y);
+	}
+
+	return output;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N> exp2(T x, const Vector<T, N>& y) LM2_NOEXCEPT {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = exp2Scalar(x, y[i]);
 	}
 
 	return output;
