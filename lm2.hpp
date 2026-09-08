@@ -218,11 +218,6 @@ public:
 };
 
 // Scalar math functions
-template<typename T>
-constexpr bool equalScalar(T a, T b, T epsilon = EPSILON<T>) LM2_NOEXCEPT {
-	return absScalar(a - b) <= epsilon;
-}
-
 template<typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
 constexpr T degreesToRadians(T degrees) LM2_NOEXCEPT {
 	return degrees * PIRAD<T>;
@@ -282,6 +277,11 @@ constexpr T maxScalar(T a, T b) LM2_NOEXCEPT {
 template<typename T>
 constexpr T clampScalar(T val, T low, T high) LM2_NOEXCEPT {
 	return minScalar(maxScalar(val, low), high);
+}
+
+template<typename T>
+constexpr bool equalScalar(T a, T b, T epsilon = EPSILON<T>) LM2_NOEXCEPT {
+	return absScalar(a - b) <= epsilon;
 }
 
 template<typename T, typename FT, std::enable_if_t<std::is_floating_point<FT>::value, bool> = true>
@@ -961,6 +961,18 @@ constexpr Matrix<T, N, N> inverse(const Matrix<T, N, N>& mat) {
 	}
 
 	return output;
+}
+template<typename T>
+constexpr Matrix<T, 2, 2> inverse(const Matrix<T, 2, 2>& mat) LM2_NOEXCEPT {
+	T det = determinant(mat);
+	if (equalScalar(det, static_cast<T>(0))) {
+		return {};
+	}
+	T invDet = static_cast<T>(1) / det;
+	return {
+		{  mat(axes::y, axes::y) * invDet, -mat(axes::x, axes::y) * invDet },
+		{ -mat(axes::y, axes::x) * invDet,  mat(axes::x, axes::x) * invDet },
+	};
 }
 // Adjugate
 template<typename T, size_t N>
