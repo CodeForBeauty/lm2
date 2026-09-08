@@ -210,6 +210,11 @@ public:
 		}
 		data[to] = tmpVal;
 	}
+
+	template<size_t N1>
+	friend constexpr Permutation1D<N1> operator*(const Permutation1D<N1>& a, const Permutation1D<N1>& b) LM2_NOEXCEPT;
+	template<size_t N1>
+	friend constexpr Permutation1D<N1> inverse(const Permutation1D<N1>& p) LM2_NOEXCEPT;
 };
 
 // Scalar math functions
@@ -1154,6 +1159,30 @@ quaternion_t<T> inverse(quaternion_t<T> quat) {
 // 	};
 // }
 
+// Permutations
+template<size_t N>
+constexpr Permutation1D<N> inverse(const Permutation1D<N>& p) LM2_NOEXCEPT {
+	Permutation1D<N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output.data[p[i]] = i;
+	}
+
+	output.sign = p.sign;
+
+	return output;
+}
+template<size_t N>
+constexpr Matrix<size_t, N, N> toMatrix(const Permutation1D<N>& p) LM2_NOEXCEPT{
+	Matrix<size_t, N, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output(i, p[i]) = 1;
+	}
+
+	return output;
+}
+
 
 // Equal
 template<typename T, size_t N>
@@ -1550,6 +1579,18 @@ quaternion_t<T> operator-(quaternion_t<T> quat) {
 }
 
 // Permutations
+template<size_t N>
+constexpr Permutation1D<N> operator*(const Permutation1D<N>& a, const Permutation1D<N>& b) LM2_NOEXCEPT {
+	Permutation1D<N> output{ a };
+
+	for (size_t i = 0; i < N; i++) {
+		output.data[i] = a[b[i]];
+	}
+
+	output.sign = a.sign == b.sign;
+
+	return output;
+}
 template<typename T, size_t N>
 constexpr Vector<T, N> operator*(const Permutation1D<N>& perm, const Vector<T, N>& vec) LM2_NOEXCEPT {
 	Vector<T, N> output{};
