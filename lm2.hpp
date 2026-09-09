@@ -1129,6 +1129,47 @@ constexpr Matrix<T, 3, 3> eulerRotation3DMatrix(const Vector<T, 3>& degrees, con
 	}
 }
 
+// Transform matrix
+template<typename T>
+constexpr Matrix<T, 4, 4> transformMatrix(const Vector<T, 3>& position, const Vector<T, 3>& rotEuler, const Vector<T, 3>& scale) LM2_NOEXCEPT {
+	return scaleMatrix(scale) * eulerRotation3DMatrix(rotEuler) * scaleMatrix(scale);
+}
+template<typename T, size_t NRow, size_t NCol>
+constexpr Vector<T, NRow> extractPosition(const Matrix<T, NRow, NCol>& mat) LM2_NOEXCEPT {
+	Vector<T, NRow> output{};
+
+	for (size_t i = 0; i < NRow; i++) {
+		output[i] = mat(i, NCol - 1);
+	}
+
+	return output;
+}
+template<typename T, size_t N>
+constexpr Vector<T, N> extractScale(const Matrix<T, N, N>& mat) LM2_NOEXCEPT {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		for (size_t j = 0; j < N; j++) {
+			output[i] += mat(j, i);
+		}
+		output[i] = sqrtScalar(output[i]);
+	}
+
+	return output;
+}
+template<typename T>
+void extractTransform(const Matrix<T, 4, 4>& mat, Vector<T, 3>& outPos, Matrix<T, 3, 3>& outRot, Vector<T, 3>& outScale) LM2_NOEXCEPT {
+	outRot = mat.template cast<3, 3>();
+	outPos = extractPosition(mat).template cast<3>();
+	outScale = extractScale(outRot);
+
+	for (size_t i = 0; i < 3; i++) {
+		for (size_t j = 0; j < 3; j++) {
+			outRot(i, j) /= outScale[i];
+		}
+	}
+}
+
 // View matrix
 template<typename T>
 constexpr Matrix<T, 4, 4> viewMatrix(const Vector<T, 3>& eye, const Vector<T, 3>& at, const Vector<T, 3>& up) LM2_NOEXCEPT {
