@@ -13,7 +13,10 @@
 
 #include <cmath>
 #include <initializer_list>
-#include <tuple>
+
+#include <cassert>
+
+#define LM2_ASSERT(_expression) assert(_expression)
 
 namespace lm2 {
 
@@ -39,27 +42,31 @@ private:
 	T data[N] {};
 
 public:
+	static_assert(N > 0, "Non-zero size is required");
+
 	constexpr Vector() = default;
 	constexpr Vector(const Vector<T, N>& v) = default;
 	constexpr Vector(Vector<T, N>&& v) = default;
 
-	constexpr Vector(std::initializer_list<T> l) : data{} {
-		size_t s = N < l.size() ? N : l.size();
-		for (size_t i = 0; i < s; i++) {
-			data[i] = *(l.begin() + i);
-		}
+	template<typename... TArgs>
+	constexpr Vector(TArgs... args) : data{static_cast<T>(args)...} {
+		static_assert(sizeof...(args) <= N, "Too many initializers");
 	}
 
 	constexpr T& operator[](size_t index) {
+		LM2_ASSERT(index >= 0 && index < N && "Index out of bounds");
 		return data[index];
 	}
 
 	constexpr const T& operator[](size_t index) const {
+		LM2_ASSERT(index >= 0 && index < N && "Index out of bounds");
 		return data[index];
 	}
 
 	template<size_t NOut>
 	constexpr Vector<T, NOut> cast() const {
+		static_assert(NOut > 0, "Can't cast Vector to size 0");
+
 		Vector<T, NOut> output{};
 
 		size_t s { N < NOut ? N : NOut };
@@ -80,6 +87,8 @@ private:
 	T data[NRow][NCol] {};
 
 public:
+	static_assert(NRow > 0 && NCol > 0, "Non-zero size is required");
+
 	constexpr Matrix() = default;
 	constexpr Matrix(const Matrix<T, NRow, NCol>& m) = default;
 	constexpr Matrix(Matrix<T, NRow, NCol>&& m) = default;
@@ -96,15 +105,21 @@ public:
 	}
 
 	constexpr T& operator()(size_t rowIndex, size_t columnIndex) {
+		LM2_ASSERT(rowIndex >= 0 && rowIndex < NRow && "Row out of bounds");
+		LM2_ASSERT(columnIndex >= 0 && columnIndex < NCol && "Column out of bounds");
 		return data[rowIndex][columnIndex];
 	}
 
 	constexpr const T& operator()(size_t rowIndex, size_t columnIndex) const {
+		LM2_ASSERT(rowIndex >= 0 && rowIndex < NRow && "Row out of bounds");
+		LM2_ASSERT(columnIndex >= 0 && columnIndex < NCol && "Column out of bounds");
 		return data[rowIndex][columnIndex];
 	}
 
 	template<size_t NRowOut, size_t NColOut>
 	constexpr Matrix<T, NRowOut, NColOut> cast() const {
+		static_assert(NRowOut > 0 && NColOut > 0, "Can't cast Matrix to size 0");
+
 		Matrix<T, NRowOut, NColOut> output{};
 
 		size_t s { NRow < NRowOut ? NRow : NRowOut };
@@ -123,15 +138,19 @@ public:
 		if (aCol == bCol) {
 			return;
 		}
+		LM2_ASSERT(aCol >= 0 && aCol < NCol && "Column a out of bounds");
+		LM2_ASSERT(bCol >= 0 && bCol < NCol && "Column b out of bounds");
 		for (size_t row = 0; row < NRow; row++) {
 			std::swap(data[row][aCol], data[row][bCol]);
 		}
 	}
-
+	
 	void swapRow(size_t aRow, size_t bRow) {
 		if (aRow == bRow) {
 			return;
 		}
+		LM2_ASSERT(aRow >= 0 && aRow < NRow && "Row a out of bounds");
+		LM2_ASSERT(bRow >= 0 && bRow < NRow && "Row b out of bounds");
 		for (size_t col = 0; col < NCol; col++) {
 			std::swap(data[aRow][col], data[bRow][col]);
 		}
@@ -155,6 +174,8 @@ private:
 	bool sign = true;
 
 public:
+	static_assert(N > 0, "Non-zero size is required");
+
 	constexpr Permutation1D(const Permutation1D<N>& p) = default;
 	constexpr Permutation1D(Permutation1D<N>&& p) = default;
 
@@ -173,6 +194,7 @@ public:
 	}
 
 	constexpr const size_t& operator[](size_t index) const {
+		LM2_ASSERT(index >= 0 && index < N && "Index out of bounds");
 		return data[index];
 	}
 
@@ -180,6 +202,8 @@ public:
 		if (aIdx == bIdx) {
 			return;
 		}
+		LM2_ASSERT(aIdx >= 0 && aIdx < N && "Index a out of bounds");
+		LM2_ASSERT(bIdx >= 0 && bIdx < N && "Index b out of bounds");
 		std::swap(data[aIdx], data[bIdx]);
 		sign = !sign;
 	}
@@ -188,6 +212,8 @@ public:
 		if (from == to) {
 			return;
 		}
+		LM2_ASSERT(from >= 0 && from < N && "From index out of bounds");
+		LM2_ASSERT(to >= 0 && to < N && "To index out of bounds");
 		
 		size_t tmpVal = data[from];
 		if (from < to) {
