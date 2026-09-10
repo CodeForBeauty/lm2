@@ -221,13 +221,11 @@ public:
 };
 
 
-// Rotation types
+// Quaternion
 template<typename T>
-struct quaternion_t {
+struct Quaternion {
 	T w, x, y, z;
 };
-
-using quaternion = quaternion_t<float>;
 
 // Permutation types
 template<size_t N>
@@ -1295,31 +1293,116 @@ constexpr Matrix<T, 4, 4> viewMatrix(const Vector<T, 3>& eye, const Vector<T, 3>
 
 // Quaternions
 template<typename T>
-T magnitudeSquared(quaternion_t<T> quat) {
-	return (quat.x * quat.x + quat.y * quat.y + quat.z * quat.z + quat.w * quat.w);
+constexpr T magnitudeSquared(const Quaternion<T>& quat) LM2_NOEXCEPT {
+	return (quat.x * quat.x) + (quat.y * quat.y) + (quat.z * quat.z) + (quat.w * quat.w);
 }
 template<typename T>
-T magnitude(quaternion_t<T> quat) {
-	return std::sqrt(magnitudeSquared(quat));
+constexpr T magnitude(const Quaternion<T>& quat) LM2_NOEXCEPT {
+	return sqrtScalar(magnitudeSquared(quat));
 }
 template<typename T>
-quaternion_t<T> normalize(quaternion_t<T> quat) {
-	return quat / magnitude(quat);
+constexpr Quaternion<T> normalize(const Quaternion<T>& quat) {
+	T mag = magnitude(quat);
+	return { quat.w / mag, quat.x / mag, quat.y / mag, quat.z / mag };
 }
 
 template<typename T>
-quaternion_t<T> inverse(quaternion_t<T> quat) {
-	return {quat.w, -quat.x, -quat.y, -quat.z};
+constexpr Quaternion<T> conjugate(const Quaternion<T>& quat) LM2_NOEXCEPT {
+	return { quat.w, -quat.x, -quat.y, -quat.z };
 }
 
-// template<typename T>
-// matrix3x3<T> toMatrix(quaternion_t<T> quat) {
-// 	return {
-// 		{ 2 * (quat.w * quat.w + quat.x * quat.x) - 1, 2 * (quat.x * quat.y - quat.w * quat.z),     2 * (quat.x * quat.z + quat.w * quat.y) },
-// 		{ 2 * (quat.x * quat.y + quat.w * quat.z),     2 * (quat.w * quat.w + quat.y * quat.y) - 1, 2 * (quat.y * quat.z - quat.w * quat.x) },
-// 		{ 2 * (quat.x * quat.z - quat.w * quat.y),     2 * (quat.y * quat.z + quat.w * quat.x),     2 * (quat.w * quat.w + quat.z * quat.z) - 1 },
-// 	};
-// }
+template<typename T>
+constexpr Vector<T, 3> rotate(const Quaternion<T>& quat, const Vector<T, 3>& vec) LM2_NOEXCEPT {
+	Vector<T, 3> complex{ quat.x, quat.y, quat.z };
+	T real = quat.w;
+	return static_cast<T>(2) * dot(complex, vec) * complex
+		+ (real * real - dot(complex, complex)) * vec
+		+ static_cast<T>(2) * real * cross(complex, vec);
+}
+
+template<typename T>
+constexpr Matrix<T, 3, 3> toMatrix(const Quaternion<T>& quat) LM2_NOEXCEPT {
+	return {
+		{ 2 * (quat.w * quat.w + quat.x * quat.x) - 1, 2 * (quat.x * quat.y - quat.w * quat.z),     2 * (quat.x * quat.z + quat.w * quat.y) },
+		{ 2 * (quat.x * quat.y + quat.w * quat.z),     2 * (quat.w * quat.w + quat.y * quat.y) - 1, 2 * (quat.y * quat.z - quat.w * quat.x) },
+		{ 2 * (quat.x * quat.z - quat.w * quat.y),     2 * (quat.y * quat.z + quat.w * quat.x),     2 * (quat.w * quat.w + quat.z * quat.z) - 1 },
+	};
+}
+
+template<typename T>
+constexpr Quaternion<T> makeQuaternion(const Vector<T, 3>& axis, T angle) LM2_NOEXCEPT {
+	angle = degreesToRadians(angle / static_cast<T>(2));
+	T s = sinScalar(angle);
+	return {
+		cosScalar(angle),
+		axis[axes::x] * s,
+		axis[axes::y] * s,
+		axis[axes::z] * s,
+	};
+}
+
+template<typename T>
+constexpr Quaternion<T> makeQuaternion(const Vector<T, 3>& eulerAngles, Rotation3DAxisOrder axisOrder = Rotation3DAxisOrder::YXZ) LM2_NOEXCEPT{
+	Vector<T, 3> radians{ degreesToRadians(eulerAngles) };
+	Vector<T, 3> c{ cosVector(radians / static_cast<T>(2)) };
+	Vector<T, 3> s{ sinVector(radians / static_cast<T>(2)) };
+
+	Quaternion<T> qx = makeQuaternion(Vector<T, 3>{ static_cast<T>(1), static_cast<T>(0), static_cast<T>(0) }, eulerAngles[axes::x]);
+	Quaternion<T> qy = makeQuaternion(Vector<T, 3>{ static_cast<T>(0), static_cast<T>(1), static_cast<T>(0) }, eulerAngles[axes::y]);
+	Quaternion<T> qz = makeQuaternion(Vector<T, 3>{ static_cast<T>(0), static_cast<T>(0), static_cast<T>(1) }, eulerAngles[axes::z]);
+
+	switch (axisOrder) {
+	case Rotation3DAxisOrder::XYZ:
+		return qx * qy * qz;
+	case Rotation3DAxisOrder::XZY:
+		return qx * qz * qy;
+	case Rotation3DAxisOrder::YXZ:
+		return qy * qx * qz;
+	case Rotation3DAxisOrder::YZX:
+		return qy * qz * qx;
+	case Rotation3DAxisOrder::ZXY:
+		return qz * qx * qy;
+	case Rotation3DAxisOrder::ZYX:
+		return qz * qy * qx;
+	default:
+		return qx * qy * qz;
+	}
+}
+
+template<typename T>
+constexpr Quaternion<T> makeQuaternion(const Matrix<T, 3, 3>& rotMatrix) LM2_NOEXCEPT {
+	T dw = static_cast<T>(1) + rotMatrix(axes::x, axes::x) + rotMatrix(axes::y, axes::y) + rotMatrix(axes::z, axes::z);
+	T dx = static_cast<T>(1) + rotMatrix(axes::x, axes::x) - rotMatrix(axes::y, axes::y) - rotMatrix(axes::z, axes::z);
+	T dy = static_cast<T>(1) - rotMatrix(axes::x, axes::x) + rotMatrix(axes::y, axes::y) - rotMatrix(axes::z, axes::z);
+	T dz = static_cast<T>(1) - rotMatrix(axes::x, axes::x) - rotMatrix(axes::y, axes::y) + rotMatrix(axes::z, axes::z);
+	Quaternion<T> output{};
+	if (dw >= dx && dw >= dy && dw >= dz) {
+		T s = sqrtScalar(dw) * static_cast<T>(2);
+		output.w = s / static_cast<T>(4);
+		output.x = (rotMatrix(axes::z, axes::y) - rotMatrix(axes::y, axes::z)) / s;
+		output.y = (rotMatrix(axes::x, axes::z) - rotMatrix(axes::z, axes::x)) / s;
+		output.z = (rotMatrix(axes::y, axes::x) - rotMatrix(axes::x, axes::y)) / s;
+	} else if (dx >= dy && dx >= dz) {
+		T s = sqrtScalar(dx) * static_cast<T>(2);
+		output.x = s / static_cast<T>(4);
+		output.w = (rotMatrix(axes::z, axes::y) - rotMatrix(axes::y, axes::z)) / s;
+		output.y = (rotMatrix(axes::x, axes::y) + rotMatrix(axes::y, axes::x)) / s;
+		output.z = (rotMatrix(axes::x, axes::z) + rotMatrix(axes::z, axes::x)) / s;
+	} else if (dy >= dz) {
+		T s = sqrtScalar(dy) * static_cast<T>(2);
+		output.y = s / static_cast<T>(4);
+		output.w = (rotMatrix(axes::x, axes::z) - rotMatrix(axes::z, axes::x)) / s;
+		output.x = (rotMatrix(axes::x, axes::y) + rotMatrix(axes::y, axes::x)) / s;
+		output.z = (rotMatrix(axes::y, axes::z) + rotMatrix(axes::z, axes::y)) / s;
+	} else {
+		T s = sqrtScalar(dz) * static_cast<T>(2);
+		output.z = s / static_cast<T>(4);
+		output.w = (rotMatrix(axes::y, axes::x) - rotMatrix(axes::x, axes::y)) / s;
+		output.x = (rotMatrix(axes::x, axes::z) + rotMatrix(axes::z, axes::x)) / s;
+		output.y = (rotMatrix(axes::y, axes::z) + rotMatrix(axes::z, axes::y)) / s;
+	}
+	return output;
+}
 
 // Permutations
 template<size_t N>
@@ -1736,8 +1819,27 @@ constexpr Matrix<T, NRow1, NCol> operator*(const Matrix<T, NRow, NCol>& a, const
 
 // Quaternions
 template<typename T>
-quaternion_t<T> operator-(quaternion_t<T> quat) {
+constexpr Quaternion<T> operator-(const Quaternion<T>& quat) LM2_NOEXCEPT {
 	return { -quat.w, -quat.x, -quat.y, -quat.z };
+}
+
+template<typename T>
+constexpr Quaternion<T> operator*(const Quaternion<T>& a, T b) LM2_NOEXCEPT {
+	return { a.w * b, a.x * b, a.y * b, a.z * b };
+}
+template<typename T>
+constexpr Quaternion<T> operator/(const Quaternion<T>& a, T b) {
+	return { a.w / b, a.x / b, a.y / b, a.z / b };
+}
+
+template<typename T>
+constexpr Quaternion<T> operator*(const Quaternion<T>& a, const Quaternion<T>& b) LM2_NOEXCEPT {
+	return {
+		b.w * a.w - b.x * a.x - b.y * a.y - b.z * a.z,
+		b.w * a.x + b.x * a.w + b.y * a.z - b.z * a.y,
+		b.w * a.y + b.y * a.w + b.z * a.x - b.x * a.z,
+		b.w * a.z + b.z * a.w + b.x * a.y - b.y * a.x,
+	};
 }
 
 // Permutations
