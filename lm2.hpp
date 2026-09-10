@@ -53,6 +53,23 @@ public:
 		static_assert(sizeof...(args) <= N, "Too many initializers");
 	}
 
+	constexpr size_t size() const {
+		return N;
+	}
+
+	constexpr T* begin() {
+		return data;
+	}
+	constexpr T* end() {
+		return data + N;
+	}
+	constexpr const T* begin() const {
+		return data;
+	}
+	constexpr const T* end() const {
+		return data + N;
+	}
+
 	constexpr T& operator[](size_t index) {
 		LM2_ASSERT(index >= 0 && index < N && "Index out of bounds");
 		return data[index];
@@ -60,6 +77,19 @@ public:
 
 	constexpr const T& operator[](size_t index) const {
 		LM2_ASSERT(index >= 0 && index < N && "Index out of bounds");
+		return data[index];
+	}
+
+	constexpr T& at(size_t index) {
+		if (index < 0 || index >= N) {
+			throw std::out_of_range("Vector index out of bounds");
+		}
+		return data[index];
+	}
+	constexpr const T& at(size_t index) const {
+		if (index < 0 || index >= N) {
+			throw std::out_of_range("Vector index out of bounds");
+		}
 		return data[index];
 	}
 
@@ -104,6 +134,26 @@ public:
 		}
 	}
 
+	constexpr size_t sizeRow() const {
+		return NRow;
+	}
+	constexpr size_t sizeCol() const {
+		return NCol;
+	}
+
+	constexpr T* begin() {
+		return data;
+	}
+	constexpr T* end() {
+		return data + (NRow * NCol);
+	}
+	constexpr const T* begin() const {
+		return data;
+	}
+	constexpr const T* end() const {
+		return data + (NRow * NCol);
+	}
+
 	constexpr T& operator()(size_t rowIndex, size_t columnIndex) {
 		LM2_ASSERT(rowIndex >= 0 && rowIndex < NRow && "Row out of bounds");
 		LM2_ASSERT(columnIndex >= 0 && columnIndex < NCol && "Column out of bounds");
@@ -113,6 +163,19 @@ public:
 	constexpr const T& operator()(size_t rowIndex, size_t columnIndex) const {
 		LM2_ASSERT(rowIndex >= 0 && rowIndex < NRow && "Row out of bounds");
 		LM2_ASSERT(columnIndex >= 0 && columnIndex < NCol && "Column out of bounds");
+		return data[rowIndex][columnIndex];
+	}
+
+	constexpr T& at(size_t rowIndex, size_t columnIndex) {
+		if (rowIndex < 0 || rowIndex >= NRow || columnIndex < 0 || columnIndex >= NCol) {
+			throw std::out_of_range("Matrix index out of bounds");
+		}
+		return data[rowIndex][columnIndex];
+	}
+	constexpr const T& at(size_t rowIndex, size_t columnIndex) const {
+		if (rowIndex < 0 || rowIndex >= NRow || columnIndex < 0 || columnIndex >= NCol) {
+			throw std::out_of_range("Matrix index out of bounds");
+		}
 		return data[rowIndex][columnIndex];
 	}
 
@@ -193,8 +256,28 @@ public:
 		return N;
 	}
 
+	constexpr size_t* begin() {
+		return data;
+	}
+	constexpr size_t* end() {
+		return data + N;
+	}
+	constexpr const size_t* begin() const {
+		return data;
+	}
+	constexpr const size_t* end() const {
+		return data + N;
+	}
+
 	constexpr const size_t& operator[](size_t index) const {
 		LM2_ASSERT(index >= 0 && index < N && "Index out of bounds");
+		return data[index];
+	}
+
+	constexpr const size_t& at(size_t index) const {
+		if (index < 0 || index >= N) {
+			throw std::out_of_range("Permutation index out of bounds");
+		}
 		return data[index];
 	}
 
