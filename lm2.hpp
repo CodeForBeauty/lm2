@@ -107,6 +107,8 @@ public:
 
 		return output;
 	}
+
+	constexpr Vector<T, N>& operator=(const Vector<T, N>& other) = default;
 };
 
 
@@ -218,8 +220,16 @@ public:
 			std::swap(data[aRow][col], data[bRow][col]);
 		}
 	}
+
+	constexpr Matrix<T, NRow, NCol>& operator=(const Matrix<T, NRow, NCol>& other) = default;
 };
 
+
+template<typename T, size_t N>
+struct AxisAnglePair {
+	Vector<T, N> axis;
+	T angle;
+};
 
 // Quaternion
 template<typename T>
@@ -318,6 +328,8 @@ public:
 		data[to] = tmpVal;
 	}
 
+	constexpr Permutation1D<N>& operator=(const Permutation1D<N>& other) = default;
+
 	template<size_t N1>
 	friend constexpr Permutation1D<N1> operator*(const Permutation1D<N1>& a, const Permutation1D<N1>& b) LM2_NOEXCEPT;
 	template<size_t N1>
@@ -371,6 +383,10 @@ constexpr T arcCosScalar(T val) LM2_NOEXCEPT {
 template<typename T>
 constexpr T arcTanScalar(T val) LM2_NOEXCEPT {
 	return std::atan(val);
+}
+template<typename T>
+constexpr T arcTan2Scalar(T x, T y) LM2_NOEXCEPT {
+	return std::atan2(x, y);
 }
 
 template<typename T>
@@ -482,7 +498,7 @@ constexpr Vector<T, N> compFuncVector(const Vector<T, N>& vec, T (*func)(T)) {
 }
 
 template<typename T, size_t N>
-constexpr Vector<T, N> sqrtVector(const Vector<T, N>& vec) LM2_NOEXCEPT {
+constexpr Vector<T, N> sqrt(const Vector<T, N>& vec) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -492,7 +508,7 @@ constexpr Vector<T, N> sqrtVector(const Vector<T, N>& vec) LM2_NOEXCEPT {
 	return output;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N> absVector(const Vector<T, N>& vec) LM2_NOEXCEPT {
+constexpr Vector<T, N> abs(const Vector<T, N>& vec) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -503,7 +519,7 @@ constexpr Vector<T, N> absVector(const Vector<T, N>& vec) LM2_NOEXCEPT {
 }
 
 template<typename T, size_t N>
-constexpr Vector<T, N> sinVector(const Vector<T, N>& vec) LM2_NOEXCEPT {
+constexpr Vector<T, N> sin(const Vector<T, N>& vec) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -513,7 +529,7 @@ constexpr Vector<T, N> sinVector(const Vector<T, N>& vec) LM2_NOEXCEPT {
 	return output;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N> cosVector(const Vector<T, N>& vec) LM2_NOEXCEPT {
+constexpr Vector<T, N> cos(const Vector<T, N>& vec) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -523,7 +539,7 @@ constexpr Vector<T, N> cosVector(const Vector<T, N>& vec) LM2_NOEXCEPT {
 	return output;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N> tanVector(const Vector<T, N>& vec) LM2_NOEXCEPT {
+constexpr Vector<T, N> tan(const Vector<T, N>& vec) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -836,6 +852,24 @@ template<typename T, size_t N>
 constexpr Vector<T, N> reject(const Vector<T, N>& a, const Vector<T, N>& b) {
 	return a - project(a, b);
 }
+
+// Vector creation functions
+template<typename T, size_t N>
+constexpr Vector<T, N> filledVector(T val) LM2_NOEXCEPT {
+	Vector<T, N> output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output[i] = val;
+	}
+
+	return output;
+}
+
+template<typename T, size_t N>
+constexpr Vector<T, N> zeroVector() LM2_NOEXCEPT {
+	return {};
+}
+
 // Matrix functions
 // Get identity Matrices
 template<typename T, size_t N>
@@ -844,6 +878,19 @@ constexpr Matrix<T, N, N> identityMatrix() LM2_NOEXCEPT {
 
 	for (size_t i = 0; i < N; i++) {
 		output(i, i) = static_cast<T>(1);
+	}
+
+	return output;
+}
+// Filled matrix
+template<typename T, size_t NRow, size_t NCol>
+constexpr Matrix<T, NRow, NCol> filledMatrix(T val) LM2_NOEXCEPT {
+	Matrix<T, NRow, NCol> output;
+
+	for (size_t i = 0; i < NRow; i++) {
+		for (size_t j = 0; j < NCol; j++) {
+			output(i, j) = val;
+		}
 	}
 
 	return output;
@@ -1116,6 +1163,7 @@ constexpr Matrix<T, N, N> cofactor(const Matrix<T, N, N>& mat) {
 // Eigenvectors TODO
 // Decompose transform TODO
 // QR decomposition TODO
+// SVD TODO
 
 // Position Matrices
 template<typename T, size_t N>
@@ -1199,23 +1247,23 @@ enum class Rotation3DAxisOrder {
 template<typename T>
 constexpr Matrix<T, 3, 3> eulerRotation3DMatrix(const Vector<T, 3>& degrees, const Rotation3DAxisOrder axisOrder = Rotation3DAxisOrder::YXZ) LM2_NOEXCEPT {
 	Vector<T, 3> rad{ degreesToRadians(degrees) };
-	Vector<T, 3> sin{ sinVector(rad) };
-	Vector<T, 3> cos{ cosVector(rad) };
+	Vector<T, 3> s{ sin(rad) };
+	Vector<T, 3> c{ cos(rad) };
 
 	Matrix<T, 3, 3> rotX {
 		{ 1,  0,      0      },
-		{ 0,  cos[0], sin[0] },
-		{ 0, -sin[0], cos[0] },
+		{ 0, c[0], -s[0] },
+		{ 0, s[0],  c[0] },
 	};
 	Matrix<T, 3, 3> rotY {
-		{  cos[1], 0, sin[1] },
+		{  c[1], 0, s[1] },
 		{  0,      1, 0      },
-		{ -sin[1], 0, cos[1] },
+		{ -s[1], 0, c[1] },
 	};
 	Matrix<T, 3, 3> rotZ {
-		{  cos[2], sin[2], 0 },
-		{ -sin[2], cos[2], 0 },
-		{  0,      0,      1 },
+		{ c[2], -s[2], 0 },
+		{ s[2],  c[2], 0 },
+		{ 0,      0,      1 },
 	};
 
 	switch (axisOrder) {
@@ -1234,6 +1282,33 @@ constexpr Matrix<T, 3, 3> eulerRotation3DMatrix(const Vector<T, 3>& degrees, con
 	default:
 		return rotX * rotY * rotZ;
 	}
+}
+
+template<typename T>
+constexpr Matrix<T, 3, 3> rotation3DMatrix(Vector<T, 3> axis, T angle) LM2_NOEXCEPT {
+	angle = degreesToRadians(angle);
+
+	T c = cosScalar(angle);
+    T s = sinScalar(angle);
+    T t = static_cast<T>(1) - c;
+
+	T xt = axis[axes::x] * t;
+	T yt = axis[axes::y] * t;
+	T zt = axis[axes::z] * t;
+
+	T xyt = axis[axes::x] * yt;
+	T xzt = axis[axes::x] * zt;
+	T yzt = axis[axes::y] * zt;
+
+	T xs = axis[axes::x] * s;
+	T ys = axis[axes::y] * s;
+	T zs = axis[axes::z] * s;
+
+	return {
+		{ c + axis[axes::x] * xt, xyt - zs,               xzt + ys },
+		{ xyt + zs,               c + axis[axes::y] * yt, yzt - xs },
+		{ xzt - ys,               yzt + xs,               c + axis[axes::z] * zt },
+	};
 }
 
 // Transform matrix
@@ -1277,6 +1352,21 @@ void extractTransform(const Matrix<T, 4, 4>& mat, Vector<T, 3>& outPos, Matrix<T
 	}
 }
 
+template<typename T>
+void extractTransform(const Matrix<T, 4, 4>& mat, Vector<T, 3>& outPos, Quaternion<T>& outRot, Vector<T, 3>& outScale) LM2_NOEXCEPT {
+	Matrix<T, 3, 3> tmpRot{ mat.template cast<3, 3>() };
+	outPos = extractPosition(mat).template cast<3>();
+	outScale = extractScale(tmpRot);
+
+	for (size_t i = 0; i < 3; i++) {
+		for (size_t j = 0; j < 3; j++) {
+			tmpRot(i, j) /= outScale[i];
+		}
+	}
+
+	outRot = makeQuaternion(tmpRot);
+}
+
 // View matrix
 template<typename T>
 constexpr Matrix<T, 4, 4> viewMatrix(const Vector<T, 3>& eye, const Vector<T, 3>& at, const Vector<T, 3>& up) LM2_NOEXCEPT {
@@ -1289,6 +1379,54 @@ constexpr Matrix<T, 4, 4> viewMatrix(const Vector<T, 3>& eye, const Vector<T, 3>
 		{ forward.x,         forward.y,         forward.z,         dot(forward, -eye) },
 		{ static_cast<T>(0), static_cast<T>(0), static_cast<T>(0), static_cast<T>(1) },
 	};
+}
+
+template<typename T>
+constexpr Vector<T, 3> toEulerAngles(const Matrix<T, 3, 3>& mat, Rotation3DAxisOrder axisOrder = Rotation3DAxisOrder::YXZ) LM2_NOEXCEPT {
+	switch (axisOrder) {
+    case Rotation3DAxisOrder::XYZ:
+        return {
+			radiansToDegrees( arcTan2Scalar(mat(axes::z, axes::y), mat(axes::z, axes::z)) ),
+			radiansToDegrees( arcSinScalar(clampScalar(-mat(axes::z, axes::x), static_cast<T>(-1), static_cast<T>(1))) ),
+			radiansToDegrees( arcTan2Scalar(mat(axes::y, axes::x), mat(axes::x, axes::x)) ),
+		};
+    case Rotation3DAxisOrder::XZY:
+		return {
+			radiansToDegrees( arcTan2Scalar(-mat(axes::y, axes::z), mat(axes::y, axes::y)) ),
+			radiansToDegrees( arcTan2Scalar(-mat(axes::z, axes::x), mat(axes::x, axes::x)) ),
+			radiansToDegrees( arcSinScalar(clampScalar(mat(axes::y, axes::x), static_cast<T>(-1), static_cast<T>(1))) ),
+		};
+    case Rotation3DAxisOrder::YXZ:
+		return {
+			radiansToDegrees( arcSinScalar(clampScalar(mat(axes::z, axes::y), static_cast<T>(-1), static_cast<T>(1))) ),
+			radiansToDegrees( arcTan2Scalar(-mat(axes::z, axes::x), mat(axes::z, axes::z)) ),
+			radiansToDegrees( arcTan2Scalar(-mat(axes::x, axes::y), mat(axes::y, axes::y)) ),
+		};
+    case Rotation3DAxisOrder::YZX:
+		return {
+			radiansToDegrees( arcTan2Scalar(mat(axes::z, axes::y), mat(axes::y, axes::y)) ),
+			radiansToDegrees( arcTan2Scalar(mat(axes::x, axes::z), mat(axes::x, axes::x)) ),
+			radiansToDegrees( arcSinScalar(clampScalar(-mat(axes::x, axes::y), static_cast<T>(-1), static_cast<T>(1))) ),
+		};
+    case Rotation3DAxisOrder::ZXY:
+		return {
+			radiansToDegrees( arcSinScalar(clampScalar(-mat(axes::y, axes::z), static_cast<T>(-1), static_cast<T>(1))) ),
+			radiansToDegrees( arcTan2Scalar(mat(axes::x, axes::z), mat(axes::z, axes::z)) ),
+			radiansToDegrees( arcTan2Scalar(mat(axes::y, axes::x), mat(axes::y, axes::y)) ),
+		};
+    case Rotation3DAxisOrder::ZYX:
+		return {
+			radiansToDegrees( arcTan2Scalar(-mat(axes::y, axes::z), mat(axes::z, axes::z)) ),
+			radiansToDegrees( arcSinScalar(clampScalar(mat(axes::x, axes::z), static_cast<T>(-1), static_cast<T>(1))) ),
+			radiansToDegrees( arcTan2Scalar(-mat(axes::x, axes::y), mat(axes::x, axes::x)) ),
+		};
+	default:
+		return {
+			radiansToDegrees( arcTan2Scalar(mat(axes::z, axes::y), mat(axes::z, axes::z)) ),
+			radiansToDegrees( arcSinScalar(clampScalar(-mat(axes::z, axes::x), static_cast<T>(-1), static_cast<T>(1))) ),
+			radiansToDegrees( arcTan2Scalar(mat(axes::y, axes::x), mat(axes::x, axes::x)) ),
+		};
+    }
 }
 
 // Quaternions
@@ -1330,6 +1468,28 @@ constexpr Matrix<T, 3, 3> toMatrix(const Quaternion<T>& quat) LM2_NOEXCEPT {
 }
 
 template<typename T>
+constexpr AxisAnglePair<T, 3> toAxisAngle(const Quaternion<T>& quat) LM2_NOEXCEPT {
+	LM2_ASSERT(quat.w <= static_cast<T>(1) && "Quaternion is expected to be normalized");
+	T div = sqrtScalar(1 - quat.w * quat.w);
+	if (div == static_cast<T>(0)) {
+		return {};
+	}
+	return {
+		{
+			quat.x / div,
+			quat.y / div,
+			quat.z / div,
+		},
+		radiansToDegrees(static_cast<T>(2) * arcCosScalar(quat.w)),
+	};
+}
+
+template<typename T>
+constexpr Vector<T, 3> toEulerAngles(Quaternion<T> quat, Rotation3DAxisOrder axisOrder = Rotation3DAxisOrder::YXZ) {
+	return toEulerAngles(toMatrix(quat), axisOrder);
+}
+
+template<typename T>
 constexpr Quaternion<T> makeQuaternion(const Vector<T, 3>& axis, T angle) LM2_NOEXCEPT {
 	angle = degreesToRadians(angle / static_cast<T>(2));
 	T s = sinScalar(angle);
@@ -1343,10 +1503,6 @@ constexpr Quaternion<T> makeQuaternion(const Vector<T, 3>& axis, T angle) LM2_NO
 
 template<typename T>
 constexpr Quaternion<T> makeQuaternion(const Vector<T, 3>& eulerAngles, Rotation3DAxisOrder axisOrder = Rotation3DAxisOrder::YXZ) LM2_NOEXCEPT{
-	Vector<T, 3> radians{ degreesToRadians(eulerAngles) };
-	Vector<T, 3> c{ cosVector(radians / static_cast<T>(2)) };
-	Vector<T, 3> s{ sinVector(radians / static_cast<T>(2)) };
-
 	Quaternion<T> qx = makeQuaternion(Vector<T, 3>{ static_cast<T>(1), static_cast<T>(0), static_cast<T>(0) }, eulerAngles[axes::x]);
 	Quaternion<T> qy = makeQuaternion(Vector<T, 3>{ static_cast<T>(0), static_cast<T>(1), static_cast<T>(0) }, eulerAngles[axes::y]);
 	Quaternion<T> qz = makeQuaternion(Vector<T, 3>{ static_cast<T>(0), static_cast<T>(0), static_cast<T>(1) }, eulerAngles[axes::z]);
@@ -1927,6 +2083,10 @@ std::ostream& operator<<(std::ostream& os, const Matrix<T, NRow, NCol>& mat) {
 	return os;
 }
 
+template<typename T>
+std::ostream& operator<<(std::ostream& os, const Quaternion<T>& quat) {
+	return os << quat.w << ", " << quat.x << ", " << quat.y << ", " << quat.z;
+}
 
 template<size_t N>
 std::ostream& operator<<(std::ostream& os, const Permutation1D<N>& perm) {
