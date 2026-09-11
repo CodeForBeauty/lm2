@@ -11,10 +11,13 @@
 #include <ostream>
 #endif
 
+#include <cstddef>
+
 #include <cmath>
 #include <initializer_list>
 
 #include <cassert>
+#include <stdexcept>
 
 #define LM2_ASSERT(_expression) assert(_expression)
 
@@ -34,6 +37,19 @@ namespace axes {
 };
 
 template<typename T> constexpr T EPSILON = T(0.0000001);
+
+template<typename T>
+constexpr T minScalar(T a, T b) LM2_NOEXCEPT {
+	return a < b ? a : b;
+}
+template<typename T>
+constexpr T maxScalar(T a, T b) LM2_NOEXCEPT {
+	return a > b ? a : b;
+}
+template<typename T>
+constexpr T clampScalar(T val, T low, T high) LM2_NOEXCEPT {
+	return minScalar(maxScalar(val, low), high);
+}
 
 // Vector types
 template<typename T, size_t N>
@@ -80,14 +96,14 @@ public:
 		return data[index];
 	}
 
-	constexpr T& at(size_t index) {
-		if (index < 0 || index >= N) {
+	T& at(size_t index) {
+		if (index >= N) {
 			throw std::out_of_range("Vector index out of bounds");
 		}
 		return data[index];
 	}
-	constexpr const T& at(size_t index) const {
-		if (index < 0 || index >= N) {
+	const T& at(size_t index) const {
+		if (index >= N) {
 			throw std::out_of_range("Vector index out of bounds");
 		}
 		return data[index];
@@ -144,16 +160,16 @@ public:
 	}
 
 	constexpr T* begin() {
-		return data;
+		return &data[0][0];
 	}
 	constexpr T* end() {
 		return data + (NRow * NCol);
 	}
 	constexpr const T* begin() const {
-		return data;
+		return &data[0][0];
 	}
 	constexpr const T* end() const {
-		return data + (NRow * NCol);
+		return (&data[0][0]) + (NRow * NCol);
 	}
 
 	constexpr T& operator()(size_t rowIndex, size_t columnIndex) {
@@ -168,14 +184,14 @@ public:
 		return data[rowIndex][columnIndex];
 	}
 
-	constexpr T& at(size_t rowIndex, size_t columnIndex) {
-		if (rowIndex < 0 || rowIndex >= NRow || columnIndex < 0 || columnIndex >= NCol) {
+	T& at(size_t rowIndex, size_t columnIndex) {
+		if (rowIndex >= NRow || columnIndex >= NCol) {
 			throw std::out_of_range("Matrix index out of bounds");
 		}
 		return data[rowIndex][columnIndex];
 	}
-	constexpr const T& at(size_t rowIndex, size_t columnIndex) const {
-		if (rowIndex < 0 || rowIndex >= NRow || columnIndex < 0 || columnIndex >= NCol) {
+	const T& at(size_t rowIndex, size_t columnIndex) const {
+		if (rowIndex >= NRow || columnIndex >= NCol) {
 			throw std::out_of_range("Matrix index out of bounds");
 		}
 		return data[rowIndex][columnIndex];
@@ -196,28 +212,36 @@ public:
 			}
 		}
 
+		for (size_t i = minScalar(NRow, NCol); i < minScalar(NRowOut, NColOut); i++) {
+			output(i, i) = static_cast<T>(1);
+		}
+
 		return output;
 	}
 
-	void swapCol(size_t aCol, size_t bCol) {
+	constexpr void swapCol(size_t aCol, size_t bCol) {
 		if (aCol == bCol) {
 			return;
 		}
 		LM2_ASSERT(aCol >= 0 && aCol < NCol && "Column a out of bounds");
 		LM2_ASSERT(bCol >= 0 && bCol < NCol && "Column b out of bounds");
 		for (size_t row = 0; row < NRow; row++) {
-			std::swap(data[row][aCol], data[row][bCol]);
+			T tmp = data[row][aCol];
+			data[row][aCol] = data[row][bCol];
+			data[row][bCol] = tmp;
 		}
 	}
 	
-	void swapRow(size_t aRow, size_t bRow) {
+	constexpr void swapRow(size_t aRow, size_t bRow) {
 		if (aRow == bRow) {
 			return;
 		}
 		LM2_ASSERT(aRow >= 0 && aRow < NRow && "Row a out of bounds");
 		LM2_ASSERT(bRow >= 0 && bRow < NRow && "Row b out of bounds");
 		for (size_t col = 0; col < NCol; col++) {
-			std::swap(data[aRow][col], data[bRow][col]);
+			T tmp = data[aRow][col];
+			data[aRow][col] = data[bRow][col];
+			data[bRow][col] = tmp;
 		}
 	}
 
@@ -232,7 +256,7 @@ struct AxisAnglePair {
 };
 
 // Quaternion
-template<typename T>
+template<typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
 struct Quaternion {
 	T w, x, y, z;
 };
@@ -264,12 +288,6 @@ public:
 		return N;
 	}
 
-	constexpr size_t* begin() {
-		return data;
-	}
-	constexpr size_t* end() {
-		return data + N;
-	}
 	constexpr const size_t* begin() const {
 		return data;
 	}
@@ -282,8 +300,8 @@ public:
 		return data[index];
 	}
 
-	constexpr const size_t& at(size_t index) const {
-		if (index < 0 || index >= N) {
+	const size_t& at(size_t index) const {
+		if (index >= N) {
 			throw std::out_of_range("Permutation index out of bounds");
 		}
 		return data[index];
@@ -295,7 +313,9 @@ public:
 		}
 		LM2_ASSERT(aIdx >= 0 && aIdx < N && "Index a out of bounds");
 		LM2_ASSERT(bIdx >= 0 && bIdx < N && "Index b out of bounds");
-		std::swap(data[aIdx], data[bIdx]);
+		size_t tmp = data[aIdx];
+		data[aIdx] = data[bIdx];
+		data[bIdx] = tmp;
 		sign = !sign;
 	}
 
@@ -385,22 +405,10 @@ constexpr T arcTanScalar(T val) LM2_NOEXCEPT {
 	return std::atan(val);
 }
 template<typename T>
-constexpr T arcTan2Scalar(T x, T y) LM2_NOEXCEPT {
-	return std::atan2(x, y);
+constexpr T arcTan2Scalar(T y, T x) LM2_NOEXCEPT {
+	return std::atan2(y, x);
 }
 
-template<typename T>
-constexpr T minScalar(T a, T b) LM2_NOEXCEPT {
-	return a < b ? a : b;
-}
-template<typename T>
-constexpr T maxScalar(T a, T b) LM2_NOEXCEPT {
-	return a > b ? a : b;
-}
-template<typename T>
-constexpr T clampScalar(T val, T low, T high) LM2_NOEXCEPT {
-	return minScalar(maxScalar(val, low), high);
-}
 
 template<typename T>
 constexpr bool equalScalar(T a, T b, T epsilon = EPSILON<T>) LM2_NOEXCEPT {
@@ -465,8 +473,8 @@ constexpr T expScalar(T val) LM2_NOEXCEPT {
 	return std::exp(val);
 }
 template<typename T>
-constexpr T exp2Scalar(T x, T y) LM2_NOEXCEPT {
-	return std::exp2(x, y);
+constexpr T exp2Scalar(T x) LM2_NOEXCEPT {
+	return std::exp2(x);
 }
 
 
@@ -594,7 +602,7 @@ constexpr T magnitude(const Vector<T, N>& vec) LM2_NOEXCEPT {
 }
 // Normalize
 template<typename T, size_t N>
-constexpr Vector<T, N> normalize(const Vector<T, N>& vec) {
+constexpr Vector<T, N> normalize(const Vector<T, N>& vec) LM2_NOEXCEPT {
 	return vec / magnitude(vec);
 }
 // Distance
@@ -603,7 +611,7 @@ constexpr T distanceSquared(const Vector<T, N>& a, const Vector<T, N>& b) LM2_NO
 	return magnitudeSquared(a - b);
 }
 template<typename T, size_t N>
-constexpr T distance(const Vector<T, N>& a, const Vector<T, N>& b) {
+constexpr T distance(const Vector<T, N>& a, const Vector<T, N>& b) LM2_NOEXCEPT {
 	return sqrtScalar(distanceSquared(a, b));
 }
 // Lerp
@@ -717,7 +725,7 @@ constexpr Vector<T, N> fract(const Vector<T, N>& vec) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
-		output[i] = fractScalarec(vec[i]);
+		output[i] = fractScalar(vec[i]);
 	}
 
 	return output;
@@ -804,28 +812,18 @@ constexpr Vector<T, N> exp(const Vector<T, N>& vec) LM2_NOEXCEPT {
 	return output;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N> exp2(const Vector<T, N>& x, T y) LM2_NOEXCEPT {
+constexpr Vector<T, N> exp2(const Vector<T, N>& x) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
-		output[i] = exp2Scalar(x[i], y);
-	}
-
-	return output;
-}
-template<typename T, size_t N>
-constexpr Vector<T, N> exp2(T x, const Vector<T, N>& y) LM2_NOEXCEPT {
-	Vector<T, N> output{};
-
-	for (size_t i = 0; i < N; i++) {
-		output[i] = exp2Scalar(x, y[i]);
+		output[i] = exp2Scalar(x[i]);
 	}
 
 	return output;
 }
 // Angle
 template<typename T, size_t N>
-constexpr T angle(const Vector<T, N>& a, const Vector<T, N>& b) {
+constexpr T angle(const Vector<T, N>& a, const Vector<T, N>& b) LM2_NOEXCEPT {
 	return arcCosScalar(dot(a, b) / (magnitude(a) * magnitude(b)));
 }
 // Reflect
@@ -835,7 +833,7 @@ constexpr Vector<T, N> reflect(const Vector<T, N>& v, const Vector<T, N> n) LM2_
 }
 // Refract
 template<typename T, size_t N>
-constexpr Vector<T, N> refract(const Vector<T, N>& normal, const Vector<T, N>& incident, T n1, T n2) {
+constexpr Vector<T, N> refract(const Vector<T, N>& normal, const Vector<T, N>& incident, T n1, T n2) LM2_NOEXCEPT {
 	T r = n1 / n2;
 	T cosI = dot(-normal, incident);
 	T sinT2 = r * r * (static_cast<T>(1) - cosI * cosI);
@@ -844,12 +842,12 @@ constexpr Vector<T, N> refract(const Vector<T, N>& normal, const Vector<T, N>& i
 }
 // Project
 template<typename T, size_t N>
-constexpr Vector<T, N> project(const Vector<T, N>& a, const Vector<T, N>& b) {
+constexpr Vector<T, N> project(const Vector<T, N>& a, const Vector<T, N>& b) LM2_NOEXCEPT {
 	return (dot(a, b) / dot(b, b)) * b;
 }
 // Reject
 template<typename T, size_t N>
-constexpr Vector<T, N> reject(const Vector<T, N>& a, const Vector<T, N>& b) {
+constexpr Vector<T, N> reject(const Vector<T, N>& a, const Vector<T, N>& b) LM2_NOEXCEPT {
 	return a - project(a, b);
 }
 
@@ -911,14 +909,14 @@ constexpr Matrix<T, NCol, NRow> transpose(const Matrix<T, NRow, NCol>& mat) LM2_
 // Gaussian elimination
 template<typename T, size_t NRow, size_t NCol>
 struct RowPermutMatrixPair {
-	Permutation1D<NCol> permutation;
+	Permutation1D<NRow> permutation;
 	Matrix<T, NRow, NCol> matrix;
 };
 template<typename T, size_t NRow, size_t NCol>
 constexpr RowPermutMatrixPair<T, NRow, NCol> gaussElim(const Matrix<T, NRow, NCol>& mat) {
 	RowPermutMatrixPair<T, NRow, NCol> output{ {}, mat };
 
-	for (size_t i = 0; i < NCol; i++) {
+	for (size_t i = 0; i < minScalar(NCol, NRow); i++) {
 
 		T maxVal = absScalar(output.matrix(i, i));
 		size_t maxIndex = i;
@@ -974,7 +972,9 @@ constexpr RowPermutMatrixResult<T, N> gaussElim(const Matrix<T, N, N>& mat, cons
 
 		output.matrix.swapRow(i, maxIndex);
 
-		std::swap(tmpVec[i], tmpVec[maxIndex]);
+		T tmp = tmpVec[i];
+		tmpVec[i] = tmpVec[maxIndex];
+		tmpVec[maxIndex] = tmp;
 
 		for (size_t row = i + 1; row < N; row++) {
 			T factor = output.matrix(row, i) / output.matrix(i, i);
@@ -1004,7 +1004,7 @@ constexpr RowPermutMatrixResult<T, N> gaussElim(const Matrix<T, N, N>& mat, cons
 // LU decomposition
 template<typename T, size_t NRow, size_t NCol>
 struct PLUData {
-	Permutation1D<NCol> permutation;
+	Permutation1D<NRow> permutation;
 	Matrix<T, NCol, NCol> lower;
 	Matrix<T, NRow, NCol> upper;
 
@@ -1157,7 +1157,7 @@ constexpr Matrix<T, N, N> adjugate(const Matrix<T, N, N>& mat) {
 // Cofactor
 template<typename T, size_t N>
 constexpr Matrix<T, N, N> cofactor(const Matrix<T, N, N>& mat) {
-	return inverse(adjugate(mat));
+	return transpose(adjugate(mat));
 }
 // Eigenvalues TODO
 // Eigenvectors TODO
@@ -1314,7 +1314,9 @@ constexpr Matrix<T, 3, 3> rotation3DMatrix(Vector<T, 3> axis, T angle) LM2_NOEXC
 // Transform matrix
 template<typename T>
 constexpr Matrix<T, 4, 4> transformMatrix(const Vector<T, 3>& position, const Vector<T, 3>& rotEuler, const Vector<T, 3>& scale) LM2_NOEXCEPT {
-	return scaleMatrix(scale) * eulerRotation3DMatrix(rotEuler) * scaleMatrix(scale);
+	Matrix<T, 4, 4> r = eulerRotation3DMatrix(rotEuler).template cast<4, 4>();
+	Matrix<T, 4, 4> s = scaleMatrix(scale).template cast<4, 4>();
+	return s * r * positionMatrix(position);
 }
 template<typename T, size_t NRow, size_t NCol>
 constexpr Vector<T, NRow> extractPosition(const Matrix<T, NRow, NCol>& mat) LM2_NOEXCEPT {
@@ -1332,7 +1334,7 @@ constexpr Vector<T, N> extractScale(const Matrix<T, N, N>& mat) LM2_NOEXCEPT {
 
 	for (size_t i = 0; i < N; i++) {
 		for (size_t j = 0; j < N; j++) {
-			output[i] += mat(j, i);
+			output[i] += mat(j, i) * mat(j, i);
 		}
 		output[i] = sqrtScalar(output[i]);
 	}
@@ -1431,6 +1433,10 @@ constexpr Vector<T, 3> toEulerAngles(const Matrix<T, 3, 3>& mat, Rotation3DAxisO
 
 // Quaternions
 template<typename T>
+constexpr Quaternion<T> identityQuaternion() LM2_NOEXCEPT {
+	return { static_cast<T>(1), static_cast<T>(0), static_cast<T>(0), static_cast<T>(0) };
+}
+template<typename T>
 constexpr T magnitudeSquared(const Quaternion<T>& quat) LM2_NOEXCEPT {
 	return (quat.x * quat.x) + (quat.y * quat.y) + (quat.z * quat.z) + (quat.w * quat.w);
 }
@@ -1470,7 +1476,7 @@ constexpr Matrix<T, 3, 3> toMatrix(const Quaternion<T>& quat) LM2_NOEXCEPT {
 template<typename T>
 constexpr AxisAnglePair<T, 3> toAxisAngle(const Quaternion<T>& quat) LM2_NOEXCEPT {
 	LM2_ASSERT(quat.w <= static_cast<T>(1) && "Quaternion is expected to be normalized");
-	T div = sqrtScalar(1 - quat.w * quat.w);
+	T div = sqrtScalar(static_cast<T>(1) - quat.w * quat.w);
 	if (div == static_cast<T>(0)) {
 		return {};
 	}
@@ -1485,7 +1491,7 @@ constexpr AxisAnglePair<T, 3> toAxisAngle(const Quaternion<T>& quat) LM2_NOEXCEP
 }
 
 template<typename T>
-constexpr Vector<T, 3> toEulerAngles(Quaternion<T> quat, Rotation3DAxisOrder axisOrder = Rotation3DAxisOrder::YXZ) {
+constexpr Vector<T, 3> toEulerAngles(Quaternion<T> quat, Rotation3DAxisOrder axisOrder = Rotation3DAxisOrder::YXZ) LM2_NOEXCEPT {
 	return toEulerAngles(toMatrix(quat), axisOrder);
 }
 
@@ -1640,7 +1646,7 @@ constexpr Vector<T, N> operator*(const Vector<T, N>& a, const Vector<T, N>& b) L
 	return output;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N> operator/(const Vector<T, N>& a, const Vector<T, N>& b) {
+constexpr Vector<T, N> operator/(const Vector<T, N>& a, const Vector<T, N>& b) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -1681,7 +1687,7 @@ constexpr Vector<T, N> operator*(const Vector<T, N>& a, T b) LM2_NOEXCEPT {
 	return output;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N> operator/(const Vector<T, N>& a, T b) {
+constexpr Vector<T, N> operator/(const Vector<T, N>& a, T b) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -1710,7 +1716,7 @@ constexpr Vector<T, N> operator*(T a, const Vector<T, N>& b) LM2_NOEXCEPT {
 	return b * a;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N> operator/(T a, const Vector<T, N>& b) {
+constexpr Vector<T, N> operator/(T a, const Vector<T, N>& b) LM2_NOEXCEPT {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
@@ -1787,7 +1793,7 @@ constexpr Vector<T, N>& operator*=(Vector<T, N>& a, const Vector<T, N>& b) LM2_N
 	return a;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N>& operator/=(Vector<T, N>& a, const Vector<T, N>& b) {
+constexpr Vector<T, N>& operator/=(Vector<T, N>& a, const Vector<T, N>& b) LM2_NOEXCEPT {
 	for (size_t i = 0; i < N; i++) {
 		a[i] /= b[i];
 	}
@@ -1820,7 +1826,7 @@ constexpr Vector<T, N>& operator*=(Vector<T, N>& a, T b) LM2_NOEXCEPT {
 	return a;
 }
 template<typename T, size_t N>
-constexpr Vector<T, N>& operator/=(Vector<T, N>& a, T b) {
+constexpr Vector<T, N>& operator/=(Vector<T, N>& a, T b) LM2_NOEXCEPT {
 	for (size_t i = 0; i < N; i++) {
 		a[i] /= b;
 	}
@@ -1841,7 +1847,7 @@ constexpr Vector<T, N> operator-(const Vector<T, N>& vec) LM2_NOEXCEPT {
 }
 // Increment
 template<typename T, size_t N>
-constexpr Vector<T, N> operator++(Vector<T, N>& vec) LM2_NOEXCEPT {
+constexpr Vector<T, N>& operator++(Vector<T, N>& vec) LM2_NOEXCEPT {
 	for (size_t i = 0; i < N; i++) {
 		++vec[i];
 	}
@@ -1850,7 +1856,7 @@ constexpr Vector<T, N> operator++(Vector<T, N>& vec) LM2_NOEXCEPT {
 }
 // Decrement
 template<typename T, size_t N>
-constexpr Vector<T, N> operator--(Vector<T, N>& vec) LM2_NOEXCEPT {
+constexpr Vector<T, N>& operator--(Vector<T, N>& vec) LM2_NOEXCEPT {
 	for (size_t i = 0; i < N; i++) {
 		--vec[i];
 	}
@@ -1898,7 +1904,7 @@ constexpr Matrix<T, NRow, NCol> operator*(const Matrix<T, NRow, NCol>& a, T b) L
 	return output;
 }
 template<typename T, size_t NRow, size_t NCol, std::enable_if_t<std::is_integral<T>::value || std::is_floating_point<T>::value, bool> = true>
-constexpr Matrix<T, NRow, NCol> operator/(const Matrix<T, NRow, NCol>& a, T b) {
+constexpr Matrix<T, NRow, NCol> operator/(const Matrix<T, NRow, NCol>& a, T b) LM2_NOEXCEPT {
 	Matrix<T, NRow, NCol> output{};
 
 	for (size_t i = 0; i < NRow; i++) {
@@ -1910,7 +1916,7 @@ constexpr Matrix<T, NRow, NCol> operator/(const Matrix<T, NRow, NCol>& a, T b) {
 	return output;
 }
 template<typename T, size_t NRow, size_t NCol, std::enable_if_t<std::is_integral<T>::value || std::is_floating_point<T>::value, bool> = true>
-constexpr Matrix<T, NRow, NCol> operator/(T a, const Matrix<T, NRow, NCol>& b) {
+constexpr Matrix<T, NRow, NCol> operator/(T a, const Matrix<T, NRow, NCol>& b) LM2_NOEXCEPT {
 	Matrix<T, NRow, NCol> output{};
 
 	for (size_t i = 0; i < NRow; i++) {
@@ -1984,7 +1990,7 @@ constexpr Quaternion<T> operator*(const Quaternion<T>& a, T b) LM2_NOEXCEPT {
 	return { a.w * b, a.x * b, a.y * b, a.z * b };
 }
 template<typename T>
-constexpr Quaternion<T> operator/(const Quaternion<T>& a, T b) {
+constexpr Quaternion<T> operator/(const Quaternion<T>& a, T b) LM2_NOEXCEPT {
 	return { a.w / b, a.x / b, a.y / b, a.z / b };
 }
 
@@ -2039,7 +2045,7 @@ constexpr Matrix<T, NRow, NCol> operator*(const Matrix<T, NRow, NCol>& mat, cons
 	return output;
 }
 template<typename T, size_t NRow, size_t NCol>
-constexpr Matrix<T, NRow, NCol> operator*(const Permutation1D<NCol>& perm, const Matrix<T, NRow, NCol>& mat) LM2_NOEXCEPT {
+constexpr Matrix<T, NRow, NCol> operator*(const Permutation1D<NRow>& perm, const Matrix<T, NRow, NCol>& mat) LM2_NOEXCEPT {
 	Matrix<T, NRow, NCol> output{};
 
 	for (size_t i = 0; i < NRow; i++) {
@@ -2055,7 +2061,7 @@ constexpr Matrix<T, NRow, NCol> operator*(const Permutation1D<NCol>& perm, const
 #ifndef LM2_NO_OUTPUT_FUNCTIONS
 
 template<typename T, size_t N>
-std::ostream& operator<<(std::ostream& os, Vector<T, N> vec) {
+std::ostream& operator<<(std::ostream& os, const Vector<T, N>& vec) {
 	for (size_t i = 0; i < N; i++) {
 		os << vec[i];
 		if (i != N - 1) {
