@@ -494,16 +494,152 @@ constexpr Vector<T, N> radiansToDegrees(const Vector<T, N>& vec) LM2_NOEXCEPT {
 /// @param vec input vector
 /// @param func function to run per component
 /// @return a new vector with applied function
-template<typename T, size_t N>
-constexpr Vector<T, N> compFuncVector(const Vector<T, N>& vec, T (*func)(T)) {
+template<typename T, size_t N, typename FuncT>
+constexpr Vector<T, N> compFuncVector(const Vector<T, N>& vec, FuncT&& func) {
 	Vector<T, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
-		output[i] = func(vec[i]);
+		output[i] = func(vec[i], i);
 	}
 
 	return output;
 }
+
+template<typename T, size_t N, typename FuncT>
+constexpr bool anyVector(const Vector<T, N>& vec, FuncT&& condition) {
+	for (size_t i = 0; i < N; i++) {
+		if (condition(vec[i], i)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+template<typename T, size_t N, typename FuncT>
+constexpr bool allVector(const Vector<T, N>& vec, FuncT&& condition) {
+	for (size_t i = 0; i < N; i++) {
+		if (!condition(vec[i], i)) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+template<typename T, size_t N>
+constexpr T sumVector(const Vector<T, N>& vec) LM2_NOEXCEPT {
+	T output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output += vec[i];
+	}
+
+	return output;
+}
+template<typename T, size_t N>
+constexpr T productVector(const Vector<T, N>& vec) LM2_NOEXCEPT {
+	T output{};
+
+	for (size_t i = 0; i < N; i++) {
+		output *= vec[i];
+	}
+
+	return output;
+}
+
+
+template<typename T, size_t NRow, size_t NCol>
+constexpr T sumMatrix(const Matrix<T, NRow, NCol>& mat) LM2_NOEXCEPT {
+	T output{};
+
+	for (size_t i = 0; i < NRow; i++) {
+		for (size_t j = 0; j < NCol; j++) {
+			output += mat(i, j);
+		}
+	}
+
+	return output;
+}
+template<typename T, size_t NRow, size_t NCol>
+constexpr T prodMatrix(const Matrix<T, NRow, NCol>& mat) LM2_NOEXCEPT {
+	T output{};
+
+	for (size_t i = 0; i < NRow; i++) {
+		for (size_t j = 0; j < NCol; j++) {
+			output *= mat(i, j);
+		}
+	}
+
+	return output;
+}
+template<typename T, size_t NRow, size_t NCol>
+constexpr T diagSumMatrix(const Matrix<T, NRow, NCol>& mat) LM2_NOEXCEPT {
+	T output{};
+
+	for (size_t i = 0; i < minScalar(NRow, NCol); i++) {
+		output += mat(i, i);
+	}
+
+	return output;
+}
+template<typename T, size_t NRow, size_t NCol>
+constexpr T diagProdMatrix(const Matrix<T, NRow, NCol>& mat) LM2_NOEXCEPT {
+	T output{};
+
+	for (size_t i = 0; i < minScalar(NRow, NCol); i++) {
+		output *= mat(i, i);
+	}
+
+	return output;
+}
+
+template<typename T, size_t NRow, size_t NCol, typename FuncT>
+constexpr bool anyMatrix(const Matrix<T, NRow, NCol>& mat, FuncT&& condition) {
+	for (size_t i = 0; i < NRow; i++) {
+		for (size_t j = 0; j < NCol; j++) {
+			if (condition(mat(i, j), i, j)) {
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+template<typename T, size_t NRow, size_t NCol, typename FuncT>
+constexpr bool allMatrix(const Matrix<T, NRow, NCol>& mat, FuncT&& condition) {
+	for (size_t i = 0; i < NRow; i++) {
+		for (size_t j = 0; j < NCol; j++) {
+			if (!condition(mat(i, j), i, j)) {
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+template<typename T, size_t NRow, size_t NCol, typename FuncT>
+constexpr bool diagAnyMatrix(const Matrix<T, NRow, NCol>& mat, FuncT&& condition) {
+	for (size_t i = 0; i < minScalar(NRow, NCol); i++) {
+		if (condition(mat(i, i), i)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+template<typename T, size_t NRow, size_t NCol, typename FuncT>
+constexpr bool diadAllMatrix(const Matrix<T, NRow, NCol>& mat, FuncT&& condition) {
+	for (size_t i = 0; i < minScalar(NRow, NCol); i++) {
+		if (!condition(mat(i, i), i)) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 
 template<typename T, size_t N>
 constexpr Vector<T, N> sqrt(const Vector<T, N>& vec) LM2_NOEXCEPT {
@@ -1453,6 +1589,36 @@ constexpr Quaternion<T> normalize(const Quaternion<T>& quat) {
 template<typename T>
 constexpr Quaternion<T> conjugate(const Quaternion<T>& quat) LM2_NOEXCEPT {
 	return { quat.w, -quat.x, -quat.y, -quat.z };
+}
+
+template<typename T>
+constexpr Quaternion<T> slerp(const Quaternion<T>& a, const Quaternion<T>& b, T t) {
+	T cosom = a.w * b.w + a.x * b.x + a.y * b.y + a.z * b.z;
+
+	Quaternion<T> end{ b };
+	if (cosom < static_cast<T>(0)) {
+		cosom = -cosom;
+		end.x = -end.x;
+		end.y = -end.y;
+		end.z = -end.z;
+		end.w = -end.w;
+	}
+
+	T omega = arcCosScalar(cosom);
+	T sinom = sinScalar(omega);
+	T sclp = sinScalar((static_cast<T>(1) - t) * omega) / sinom;
+	T sclq = sinScalar(t * omega) / sinom;
+	if ((static_cast<T>(1) - cosom) < EPSILON<T>) {
+		sclp = static_cast<T>(1) - t;
+		sclq = t;
+	}
+
+	return {
+		sclp * a.w + sclq * end.w,
+		sclp * a.x + sclq * end.x,
+		sclp * a.y + sclq * end.y,
+		sclp * a.z + sclq * end.z,
+	};
 }
 
 template<typename T>
