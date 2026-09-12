@@ -1,5 +1,23 @@
 /*
-* A single header library for basic linear math
+* A single header library for basic linear math.
+* 
+* Best suited for graphics programming and and basic linear algebra operations.
+* 
+*	Usage examples:
+* Vector:
+*	lm2::Vector<float, 3> vec{ 0, 5, 1 };
+*	vec += 2.0f;
+*	vec = lm2::normalize(vec);
+*
+* Matrix:
+*	lm2::Matrix<float, 4, 4> rotMat = lm2::eulerRotation3DMatrix<float>({ 0, 90, 0 }).cast<4, 4>();
+*	lm2::Matrix<float, 4, 4> posMat = lm2::positionMatrix<float, 3>({ 2, 0, 0 });
+*	lm2::Matrix<float, 4, 4> rotPos = rotMat * posMat;
+*
+* Quaternion:
+*	lm2::Quaternion<float> quat = lm2::makeQuaternion<float>({ 0, 90, 0 }); // Make quaternion out of euler angles
+*	lm2::Vector<float, 3> vec{ 1, 0, 0 };
+*	lm2::Vector<float, 3> rotatedVec = lm2::rotate(quat, vec);
 */
 #pragma once
 
@@ -16,16 +34,20 @@
 #include <cmath>
 #include <initializer_list>
 
-#include <cassert>
 #include <stdexcept>
 
+#ifdef LM2_NOASSERT
+#define LM2_ASSERT(_expression) ((void)0)
+#else
+#include <cassert>
 #define LM2_ASSERT(_expression) assert(_expression)
+#endif
 
 namespace lm2 {
 
-template<typename T> constexpr T PI = T(3.1415926535897932384626433832795);
-template<typename T> constexpr T E = T(2.7182818284590452353602874713527);
-template<typename T> constexpr T PIRAD = PI<T> / T(180);
+template<typename T> constexpr T PI = static_cast<T>(3.1415926535897932384626433832795);
+template<typename T> constexpr T E = static_cast<T>(2.7182818284590452353602874713527);
+template<typename T> constexpr T PIRAD = PI<T> / static_cast<T>(180);
 
 namespace axes {
 	enum {
@@ -52,6 +74,10 @@ constexpr T clampScalar(T val, T low, T high) LM2_NOEXCEPT {
 }
 
 // Vector types
+
+/// @brief Generic Vector type
+/// @tparam T Data type
+/// @tparam N Number of dimensions
 template<typename T, size_t N>
 class Vector {
 private:
@@ -109,6 +135,9 @@ public:
 		return data[index];
 	}
 
+	/// @brief Resizes the vector to given size, will truncate the data to fit the given size
+	/// @tparam NOut output size
+	/// @return A new Vector with given size
 	template<size_t NOut>
 	constexpr Vector<T, NOut> cast() const {
 		static_assert(NOut > 0, "Can't cast Vector to size 0");
@@ -129,6 +158,11 @@ public:
 
 
 // Matrix types
+
+/// @brief Generic Matrix type
+/// @tparam T Data type
+/// @tparam NRow Row count
+/// @tparam NCol Column count
 template<typename T, size_t NRow, size_t NCol>
 class Matrix {
 private:
@@ -163,7 +197,7 @@ public:
 		return &data[0][0];
 	}
 	constexpr T* end() {
-		return data + (NRow * NCol);
+		return (&data[0][0]) + (NRow * NCol);
 	}
 	constexpr const T* begin() const {
 		return &data[0][0];
@@ -197,6 +231,10 @@ public:
 		return data[rowIndex][columnIndex];
 	}
 
+	/// @brief Resize the Matrix to given size. Truncates data to fit smaller sizes and expands with diagonal values being set to 1
+	/// @tparam NRowOut Output row count
+	/// @tparam NColOut Output column count
+	/// @return A new Matrix with the given size
 	template<size_t NRowOut, size_t NColOut>
 	constexpr Matrix<T, NRowOut, NColOut> cast() const {
 		static_assert(NRowOut > 0 && NColOut > 0, "Can't cast Matrix to size 0");
@@ -219,6 +257,9 @@ public:
 		return output;
 	}
 
+	/// @brief Permutes Matrix by swapping values from given columns
+	/// @param aCol Column A to swap from
+	/// @param bCol Column B to swap to
 	constexpr void swapCol(size_t aCol, size_t bCol) {
 		if (aCol == bCol) {
 			return;
@@ -232,6 +273,9 @@ public:
 		}
 	}
 	
+	/// @brief Permutes Matrix by swapping values from given rows
+	/// @param aRow Row A to swap from
+	/// @param bRow Row B to swap to
 	constexpr void swapRow(size_t aRow, size_t bRow) {
 		if (aRow == bRow) {
 			return;
@@ -248,7 +292,9 @@ public:
 	constexpr Matrix<T, NRow, NCol>& operator=(const Matrix<T, NRow, NCol>& other) = default;
 };
 
-
+/// @brief Axis angle, used to return data from the functions
+/// @tparam T Type for data
+/// @tparam N Number of dimensions for the axis
 template<typename T, size_t N>
 struct AxisAnglePair {
 	Vector<T, N> axis;
@@ -256,12 +302,18 @@ struct AxisAnglePair {
 };
 
 // Quaternion
+
+/// @brief Generic Quaternion type, member order is: w, x, y, z
+/// @tparam T Data type, required to be floating point number
 template<typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
 struct Quaternion {
 	T w, x, y, z;
 };
 
 // Permutation types
+
+/// @brief A simple one dimensional pemutation type
+/// @tparam N Number of elements
 template<size_t N>
 class Permutation1D {
 private:
@@ -280,6 +332,8 @@ public:
 		}
 	}
 
+	/// @brief Check if current state of the permutation positive
+	/// @return Internal sign
 	constexpr bool isPositive() const {
 		return sign;
 	}
@@ -307,6 +361,7 @@ public:
 		return data[index];
 	}
 
+	/// @brief Swap two elements
 	constexpr void swap(size_t aIdx, size_t bIdx) {
 		if (aIdx == bIdx) {
 			return;
@@ -319,6 +374,7 @@ public:
 		sign = !sign;
 	}
 
+	/// @brief Move one element to given index
 	constexpr void move(size_t from, size_t to) {
 		if (from == to) {
 			return;
@@ -415,6 +471,7 @@ constexpr bool equalScalar(T a, T b, T epsilon = EPSILON<T>) LM2_NOEXCEPT {
 	return absScalar(a - b) <= epsilon;
 }
 
+/// @brief Linearly interpolate between two values
 template<typename T, typename FT, std::enable_if_t<std::is_floating_point<FT>::value, bool> = true>
 constexpr T lerpScalar(T a, T b, FT f) LM2_NOEXCEPT {
 	return static_cast<T>(static_cast<FT>(a) * f + (static_cast<FT>(1) - f) * static_cast<FT>(b));
@@ -433,14 +490,16 @@ constexpr T roundScalar(T val) LM2_NOEXCEPT {
 	return std::round(val);
 }
 
+/// @brief Get fractional part of a scalar value. This is a more precise version.
 template<typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
 T fractScalar(T val) LM2_NOEXCEPT {
 	T whole;
 	return std::modf(val, &whole);
 }
+/// @brief This is a more performant approach with precision tradeoff. This function is also constexpr friendly.
 template<typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
 constexpr T fractScalarConst(T val) LM2_NOEXCEPT {
-	T whole = static_cast<long long>(val);
+	T whole = static_cast<T>(static_cast<long long>(val));
 	return val - whole;
 }
 template<typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
@@ -453,12 +512,12 @@ constexpr T signScalar(T val) LM2_NOEXCEPT {
 }
 template<typename T>
 constexpr T stepScalar(T edge, T val) LM2_NOEXCEPT {
-	return val >= edge;
+	return static_cast<T>(val >= edge);
 }
 template<typename T>
 constexpr T smoothstepScalar(T edge1, T edge2, T val) LM2_NOEXCEPT {
 	if (edge1 == edge2) {
-		return val >= edge2 ? static_cast<T>(1) : static_cast<T>(0);
+		return val >= edge1 ? static_cast<T>(1) : static_cast<T>(0);
 	}
 	T t = clampScalar((val - edge1) / (edge2 - edge1), static_cast<T>(0), static_cast<T>(1));
 	return t * t * (static_cast<T>(3) - static_cast<T>(2) * t);
@@ -488,12 +547,10 @@ constexpr Vector<T, N> radiansToDegrees(const Vector<T, N>& vec) LM2_NOEXCEPT {
 	return vec / PIRAD<T>;
 }
 
-/// @brief Run function per component and return new vector
-/// @tparam T vector data type
-/// @tparam N vector dimensions
-/// @param vec input vector
-/// @param func function to run per component
-/// @return a new vector with applied function
+/// @brief Run function per element and add it's output to the output
+/// @param vec Input Vector
+/// @param func Function to run per component, is required to take (T value, size_t index) and return a T value
+/// @return A new Vector with applied function
 template<typename T, size_t N, typename FuncT>
 constexpr Vector<T, N> compFuncVector(const Vector<T, N>& vec, FuncT&& func) {
 	Vector<T, N> output{};
@@ -504,18 +561,24 @@ constexpr Vector<T, N> compFuncVector(const Vector<T, N>& vec, FuncT&& func) {
 
 	return output;
 }
-
+/// @brief Check if any element in the Vector meets the condition
+/// @param vec Input Vector
+/// @param condition Function returning bool and taking (T value)
+/// @return true if any element meets the condition, false otherwise
 template<typename T, size_t N, typename FuncT>
 constexpr bool anyVector(const Vector<T, N>& vec, FuncT&& condition) {
 	for (size_t i = 0; i < N; i++) {
-		if (condition(vec[i], i)) {
+		if (condition(vec[i])) {
 			return true;
 		}
 	}
 
 	return false;
 }
-
+/// @brief Check if all elements in the Vector meet the condition
+/// @param vec Input Vector
+/// @param condition Function returning bool and taking (T value)
+/// @return false if any element doesn't meet the condition, true otherwise
 template<typename T, size_t N, typename FuncT>
 constexpr bool allVector(const Vector<T, N>& vec, FuncT&& condition) {
 	for (size_t i = 0; i < N; i++) {
@@ -526,7 +589,7 @@ constexpr bool allVector(const Vector<T, N>& vec, FuncT&& condition) {
 
 	return true;
 }
-
+/// @brief Sum all of the elements in the Vector
 template<typename T, size_t N>
 constexpr T sumVector(const Vector<T, N>& vec) LM2_NOEXCEPT {
 	T output{};
@@ -537,6 +600,7 @@ constexpr T sumVector(const Vector<T, N>& vec) LM2_NOEXCEPT {
 
 	return output;
 }
+/// @brief Multiply all of the elements in the Vector
 template<typename T, size_t N>
 constexpr T productVector(const Vector<T, N>& vec) LM2_NOEXCEPT {
 	T output{};
@@ -548,7 +612,7 @@ constexpr T productVector(const Vector<T, N>& vec) LM2_NOEXCEPT {
 	return output;
 }
 
-
+/// @brief Sum all of the elements in the Matrix
 template<typename T, size_t NRow, size_t NCol>
 constexpr T sumMatrix(const Matrix<T, NRow, NCol>& mat) LM2_NOEXCEPT {
 	T output{};
@@ -561,6 +625,7 @@ constexpr T sumMatrix(const Matrix<T, NRow, NCol>& mat) LM2_NOEXCEPT {
 
 	return output;
 }
+/// @brief Multiply all of the elements in the Matrix
 template<typename T, size_t NRow, size_t NCol>
 constexpr T prodMatrix(const Matrix<T, NRow, NCol>& mat) LM2_NOEXCEPT {
 	T output{};
@@ -573,6 +638,7 @@ constexpr T prodMatrix(const Matrix<T, NRow, NCol>& mat) LM2_NOEXCEPT {
 
 	return output;
 }
+/// @brief Sum all of the diagonal elements in the Matrix
 template<typename T, size_t NRow, size_t NCol>
 constexpr T diagSumMatrix(const Matrix<T, NRow, NCol>& mat) LM2_NOEXCEPT {
 	T output{};
@@ -583,6 +649,7 @@ constexpr T diagSumMatrix(const Matrix<T, NRow, NCol>& mat) LM2_NOEXCEPT {
 
 	return output;
 }
+/// @brief Multiply all of the diagonal elements in the Matrix
 template<typename T, size_t NRow, size_t NCol>
 constexpr T diagProdMatrix(const Matrix<T, NRow, NCol>& mat) LM2_NOEXCEPT {
 	T output{};
@@ -594,11 +661,15 @@ constexpr T diagProdMatrix(const Matrix<T, NRow, NCol>& mat) LM2_NOEXCEPT {
 	return output;
 }
 
+/// @brief Check if any element in the Matrix meets the condition
+/// @param mat Input Matrix
+/// @param condition Function returning bool and taking (T value)
+/// @return True if any element meets the condition, false otherwise
 template<typename T, size_t NRow, size_t NCol, typename FuncT>
 constexpr bool anyMatrix(const Matrix<T, NRow, NCol>& mat, FuncT&& condition) {
 	for (size_t i = 0; i < NRow; i++) {
 		for (size_t j = 0; j < NCol; j++) {
-			if (condition(mat(i, j), i, j)) {
+			if (condition(mat(i, j))) {
 				return true;
 			}
 		}
@@ -606,11 +677,15 @@ constexpr bool anyMatrix(const Matrix<T, NRow, NCol>& mat, FuncT&& condition) {
 
 	return false;
 }
+/// @brief Check if all of the elements in the Matrix meet the condition
+/// @param mat Input Matrix
+/// @param condition Function returning bool and taking (T value)
+/// @return False if any element doesn't meet the condition, true otherwise
 template<typename T, size_t NRow, size_t NCol, typename FuncT>
 constexpr bool allMatrix(const Matrix<T, NRow, NCol>& mat, FuncT&& condition) {
 	for (size_t i = 0; i < NRow; i++) {
 		for (size_t j = 0; j < NCol; j++) {
-			if (!condition(mat(i, j), i, j)) {
+			if (!condition(mat(i, j))) {
 				return false;
 			}
 		}
@@ -619,20 +694,28 @@ constexpr bool allMatrix(const Matrix<T, NRow, NCol>& mat, FuncT&& condition) {
 	return true;
 }
 
+/// @brief Check if any diagonal element in the Matrix meets the condition
+/// @param mat Input Matrix
+/// @param condition Function returning bool and taking (T value)
+/// @return True if any element meets the condition, false otherwise
 template<typename T, size_t NRow, size_t NCol, typename FuncT>
 constexpr bool diagAnyMatrix(const Matrix<T, NRow, NCol>& mat, FuncT&& condition) {
 	for (size_t i = 0; i < minScalar(NRow, NCol); i++) {
-		if (condition(mat(i, i), i)) {
+		if (condition(mat(i, i))) {
 			return true;
 		}
 	}
 
 	return false;
 }
+/// @brief Check if all of the diagonal elements in the Matrix meet the condition
+/// @param mat Input Matrix
+/// @param condition Function returning bool and taking (T value)
+/// @return False if any element doesn't meet the condition, true otherwise
 template<typename T, size_t NRow, size_t NCol, typename FuncT>
 constexpr bool diadAllMatrix(const Matrix<T, NRow, NCol>& mat, FuncT&& condition) {
 	for (size_t i = 0; i < minScalar(NRow, NCol); i++) {
-		if (!condition(mat(i, i), i)) {
+		if (!condition(mat(i, i))) {
 			return false;
 		}
 	}
@@ -751,6 +834,7 @@ constexpr T distance(const Vector<T, N>& a, const Vector<T, N>& b) LM2_NOEXCEPT 
 	return sqrtScalar(distanceSquared(a, b));
 }
 // Lerp
+/// @brief Linearly interpolate two Vectors
 template<typename T, size_t N, typename FT, std::enable_if_t<std::is_floating_point<FT>::value, bool> = true>
 constexpr Vector<T, N> lerp(const Vector<T, N>& a, const Vector<T, N>& b, FT f) LM2_NOEXCEPT {
 	Vector<T, N> output{};
@@ -958,16 +1042,26 @@ constexpr Vector<T, N> exp2(const Vector<T, N>& x) LM2_NOEXCEPT {
 	return output;
 }
 // Angle
+/// @brief Get the angle between two Vectors
 template<typename T, size_t N>
 constexpr T angle(const Vector<T, N>& a, const Vector<T, N>& b) LM2_NOEXCEPT {
 	return arcCosScalar(dot(a, b) / (magnitude(a) * magnitude(b)));
 }
 // Reflect
+/// @brief Reflect a Vector from a normal
+/// @param v Input Vector
+/// @param n Normal to reflect from, expected to be unit length
+/// @return Reflected Vector
 template<typename T, size_t N>
 constexpr Vector<T, N> reflect(const Vector<T, N>& v, const Vector<T, N> n) LM2_NOEXCEPT {
 	return v - static_cast<T>(2) * dot(v, n) * n;
 }
 // Refract
+/// @brief Refract a Vector from a normal
+/// @param normal Normal to refract from, expected to be unit length
+/// @param incident Direction of the hit, expected to be unit length
+/// @param n1 IOR of the incident
+/// @param n2 IOR of the hit surface
 template<typename T, size_t N>
 constexpr Vector<T, N> refract(const Vector<T, N>& normal, const Vector<T, N>& incident, T n1, T n2) LM2_NOEXCEPT {
 	T r = n1 / n2;
@@ -1043,11 +1137,15 @@ constexpr Matrix<T, NCol, NRow> transpose(const Matrix<T, NRow, NCol>& mat) LM2_
 	return output;
 }
 // Gaussian elimination
+/// @brief Output type from internal functions
 template<typename T, size_t NRow, size_t NCol>
 struct RowPermutMatrixPair {
-	Permutation1D<NRow> permutation;
-	Matrix<T, NRow, NCol> matrix;
+	Permutation1D<NRow> permutation; /// Row permutation
+	Matrix<T, NRow, NCol> matrix; /// Row echelon form
 };
+/// @brief Basic Gaussian Elimination with partial pivoting of rows
+/// @param mat Input Matrix
+/// @return Matrix Permutation pair
 template<typename T, size_t NRow, size_t NCol>
 constexpr RowPermutMatrixPair<T, NRow, NCol> gaussElim(const Matrix<T, NRow, NCol>& mat) {
 	RowPermutMatrixPair<T, NRow, NCol> output{ {}, mat };
@@ -1081,13 +1179,17 @@ constexpr RowPermutMatrixPair<T, NRow, NCol> gaussElim(const Matrix<T, NRow, NCo
 
 	return output;
 }
-
+/// @brief Output type from internal functions
 template<typename T, size_t N>
 struct RowPermutMatrixResult {
-	Permutation1D<N> permutation;
-	Matrix<T, N, N> matrix;
-	Vector<T, N> result;
+	Permutation1D<N> permutation; /// Row permutation
+	Matrix<T, N, N> matrix; /// Row echelon form
+	Vector<T, N> result; /// Calculated result
 };
+/// @brief Solve for x from mat * x = vec
+/// @param mat Input Matrix
+/// @param vec Input Vector
+/// @return A structure with permutation, row echelon Matrix, and calculated x
 template<typename T, size_t N>
 constexpr RowPermutMatrixResult<T, N> gaussElim(const Matrix<T, N, N>& mat, const Vector<T, N>& vec) {
 	Vector<T, N> tmpVec{ vec };
@@ -1138,12 +1240,16 @@ constexpr RowPermutMatrixResult<T, N> gaussElim(const Matrix<T, N, N>& mat, cons
 	return output;
 }
 // LU decomposition
+/// @brief Data structure for PLU decomposition
 template<typename T, size_t NRow, size_t NCol>
 struct PLUData {
-	Permutation1D<NRow> permutation;
+	Permutation1D<NRow> permutation; /// Row permutation
 	Matrix<T, NCol, NCol> lower;
 	Matrix<T, NRow, NCol> upper;
 
+	/// @brief Perform forward substitution on a given Vector
+	/// @param vec Input Vector
+	/// @return Result after forward substitution
 	constexpr Vector<T, NCol> solve(Vector<T, NCol> vec) const {
 		static_assert(NRow == NCol && "Concrete solution only exists for square matrices");
 
@@ -1170,6 +1276,9 @@ struct PLUData {
 		return result;
 	}
 };
+/// @brief Perform PLU decomposition on a Matrix
+/// @param mat Input Matrix
+/// @return PLU data structure
 template<typename T, size_t NRow, size_t NCol>
 constexpr PLUData<T, NRow, NCol> plu(const Matrix<T, NRow, NCol>& mat) {
 	PLUData<T, NRow, NCol> output{ {}, {}, {mat} };
@@ -1209,7 +1318,6 @@ constexpr PLUData<T, NRow, NCol> plu(const Matrix<T, NRow, NCol>& mat) {
 
 	return output;
 }
-// Cholesky decomposition TODO
 // Determinant
 template<typename T, size_t N>
 constexpr T determinant(const Matrix<T, N, N>& mat) {
@@ -1233,6 +1341,7 @@ constexpr T determinant(const Matrix<T, 3, 3>& mat) LM2_NOEXCEPT {
 		+ mat(axes::z, axes::x) * (mat(axes::x, axes::y) * mat(axes::y, axes::z) - mat(axes::y, axes::y) * mat(axes::x, axes::z));
 }
 // Inverse
+/// @brief Find the inverse of a Matrix using PLU decomposition
 template<typename T, size_t N>
 constexpr Matrix<T, N, N> inverse(const Matrix<T, N, N>& mat) {
 	PLUData<T, N, N> solver = plu(mat);
@@ -1295,11 +1404,6 @@ template<typename T, size_t N>
 constexpr Matrix<T, N, N> cofactor(const Matrix<T, N, N>& mat) {
 	return transpose(adjugate(mat));
 }
-// Eigenvalues TODO
-// Eigenvectors TODO
-// Decompose transform TODO
-// QR decomposition TODO
-// SVD TODO
 
 // Position Matrices
 template<typename T, size_t N>
@@ -1312,7 +1416,7 @@ constexpr Matrix<T, N + 1, N + 1> positionMatrix(const Vector<T, N>& pos) LM2_NO
 
 	return output;
 }
-
+// Scale Matrices
 template<typename T, size_t N>
 constexpr Matrix<T, N, N> scaleMatrix(const Vector<T, N>& scale) LM2_NOEXCEPT {
 	Matrix<T, N, N> output{};
@@ -1448,6 +1552,7 @@ constexpr Matrix<T, 3, 3> rotation3DMatrix(Vector<T, 3> axis, T angle) LM2_NOEXC
 }
 
 // Transform matrix
+/// @brief Construct a TRS matrix with scale applied first, rotation second, translation third
 template<typename T>
 constexpr Matrix<T, 4, 4> transformMatrix(const Vector<T, 3>& position, const Vector<T, 3>& rotEuler, const Vector<T, 3>& scale) LM2_NOEXCEPT {
 	Matrix<T, 4, 4> r = eulerRotation3DMatrix(rotEuler).template cast<4, 4>();
@@ -1621,6 +1726,7 @@ constexpr Quaternion<T> slerp(const Quaternion<T>& a, const Quaternion<T>& b, T 
 	};
 }
 
+/// @brief Apply quaternion rotation to a Vector
 template<typename T>
 constexpr Vector<T, 3> rotate(const Quaternion<T>& quat, const Vector<T, 3>& vec) LM2_NOEXCEPT {
 	Vector<T, 3> complex{ quat.x, quat.y, quat.z };
