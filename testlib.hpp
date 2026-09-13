@@ -40,13 +40,13 @@ public:
 				Log("    passed", LogColor::Green);
 				passed++;
 			}
-			catch (TestFail_Type fail) {
+			catch (TestFail_Type& fail) {
 				Log("    failed", LogColor::Red);
 				std::cout << "    ";
 				Log(fail.condition + ", line: " + std::to_string(fail.line), LogColor::Red);
 				failed++;
 			}
-			catch (std::exception e) {
+			catch (std::exception& e) {
 				std::cout << "    ";
 				Log(e.what(), LogColor::Red);
 				failed++;
@@ -81,7 +81,7 @@ public:
 	}
 
 private:
-	std::vector< std::pair< std::string, std::function<void()> > >  mTests;
+	std::vector< std::pair< std::string, std::function<void()> > >  mTests {};
 } testRunner_Test;
 
 #define TEST_CASE(testName) \

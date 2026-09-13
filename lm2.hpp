@@ -113,12 +113,12 @@ public:
 	}
 
 	constexpr T& operator[](size_t index) {
-		LM2_ASSERT(index >= 0 && index < N && "Index out of bounds");
+		LM2_ASSERT(index < N && "Index out of bounds");
 		return data[index];
 	}
 
 	constexpr const T& operator[](size_t index) const {
-		LM2_ASSERT(index >= 0 && index < N && "Index out of bounds");
+		LM2_ASSERT(index < N && "Index out of bounds");
 		return data[index];
 	}
 
@@ -207,14 +207,14 @@ public:
 	}
 
 	constexpr T& operator()(size_t rowIndex, size_t columnIndex) {
-		LM2_ASSERT(rowIndex >= 0 && rowIndex < NRow && "Row out of bounds");
-		LM2_ASSERT(columnIndex >= 0 && columnIndex < NCol && "Column out of bounds");
+		LM2_ASSERT(rowIndex < NRow && "Row out of bounds");
+		LM2_ASSERT(columnIndex < NCol && "Column out of bounds");
 		return data[rowIndex][columnIndex];
 	}
 
 	constexpr const T& operator()(size_t rowIndex, size_t columnIndex) const {
-		LM2_ASSERT(rowIndex >= 0 && rowIndex < NRow && "Row out of bounds");
-		LM2_ASSERT(columnIndex >= 0 && columnIndex < NCol && "Column out of bounds");
+		LM2_ASSERT(rowIndex < NRow && "Row out of bounds");
+		LM2_ASSERT(columnIndex < NCol && "Column out of bounds");
 		return data[rowIndex][columnIndex];
 	}
 
@@ -264,8 +264,8 @@ public:
 		if (aCol == bCol) {
 			return;
 		}
-		LM2_ASSERT(aCol >= 0 && aCol < NCol && "Column a out of bounds");
-		LM2_ASSERT(bCol >= 0 && bCol < NCol && "Column b out of bounds");
+		LM2_ASSERT(aCol < NCol && "Column a out of bounds");
+		LM2_ASSERT(bCol < NCol && "Column b out of bounds");
 		for (size_t row = 0; row < NRow; row++) {
 			T tmp = data[row][aCol];
 			data[row][aCol] = data[row][bCol];
@@ -280,8 +280,8 @@ public:
 		if (aRow == bRow) {
 			return;
 		}
-		LM2_ASSERT(aRow >= 0 && aRow < NRow && "Row a out of bounds");
-		LM2_ASSERT(bRow >= 0 && bRow < NRow && "Row b out of bounds");
+		LM2_ASSERT(aRow < NRow && "Row a out of bounds");
+		LM2_ASSERT(bRow < NRow && "Row b out of bounds");
 		for (size_t col = 0; col < NCol; col++) {
 			T tmp = data[aRow][col];
 			data[aRow][col] = data[bRow][col];
@@ -1251,7 +1251,7 @@ struct PLUData {
 	/// @param vec Input Vector
 	/// @return Result after forward substitution
 	constexpr Vector<T, NCol> solve(Vector<T, NCol> vec) const {
-		static_assert(NRow == NCol && "Concrete solution only exists for square matrices");
+		static_assert(NRow == NCol, "Concrete solution only exists for square matrices");
 
 		vec = permutation * vec;
 
@@ -1491,19 +1491,19 @@ constexpr Matrix<T, 3, 3> eulerRotation3DMatrix(const Vector<T, 3>& degrees, con
 	Vector<T, 3> c{ cos(rad) };
 
 	Matrix<T, 3, 3> rotX {
-		{ 1,  0,      0      },
-		{ 0, c[0], -s[0] },
-		{ 0, s[0],  c[0] },
+		{ static_cast<T>(1), static_cast<T>(0), static_cast<T>(0) },
+		{ static_cast<T>(0), c[0],             -s[0] },
+		{ static_cast<T>(0), s[0],              c[0] },
 	};
 	Matrix<T, 3, 3> rotY {
-		{  c[1], 0, s[1] },
-		{  0,      1, 0      },
-		{ -s[1], 0, c[1] },
+		{  c[1],              static_cast<T>(0), s[1] },
+		{  static_cast<T>(0), static_cast<T>(1), static_cast<T>(0) },
+		{ -s[1],              static_cast<T>(0), c[1] },
 	};
 	Matrix<T, 3, 3> rotZ {
-		{ c[2], -s[2], 0 },
-		{ s[2],  c[2], 0 },
-		{ 0,      0,      1 },
+		{ c[2],             -s[2],              static_cast<T>(0) },
+		{ s[2],              c[2],              static_cast<T>(0) },
+		{ static_cast<T>(0), static_cast<T>(0), static_cast<T>(1) },
 	};
 
 	switch (axisOrder) {
