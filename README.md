@@ -26,7 +26,7 @@ Linear interpolation.
 
 Permutations.
 
-Linear system solvers. (Gaussian Elimination, PLU dcomposition)
+Linear system solvers. (Gaussian Elimination, PLU decomposition)
 
 Common Matrix constructors for graphics programming. (perspectiveProjection, orthogonalProjection, eulerRotation3DMatrix, viewMatrix etc.)
 
@@ -89,7 +89,7 @@ Multiplying Permutation1D with Matrix permutes Matrix's rows. Multiplying Matrix
 Multiplying two Matrices goes in left to right order. Multiplying a * b * c matrices would mean: apply a first, b second and c last.
 This differs from general row-major matrix multiplication as internal matrix multiplication logic is flipped to achieve this.
 
-Quaternions are aggregate type, and have values of zero when not initialized. Using function lm2::identityQuaternion is recommended for unitialized quaternions.
+Quaternions are aggregate type, and have values of zero when not initialized. Using function lm2::identityQuaternion is recommended for uninitialized quaternions.
 
 ## Tests
 

@@ -105,7 +105,7 @@ private:
 #define ASSERT_EQUAL(a, b, compFunc) \
 	do { \
 		if (!compFunc(a, b)) { \
-			throw TestFail_Type{ "Given: " + to_string(a) + ", expected: " + to_string(a), __LINE__ }; \
+			throw TestFail_Type{ "Given: " + to_string(a) + ", expected: " + to_string(b), __LINE__ }; \
 		} \
 	} while (false);
 
