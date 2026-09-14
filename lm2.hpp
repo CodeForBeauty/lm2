@@ -1454,7 +1454,7 @@ constexpr Matrix<T, 4, 4> orthographicProjection(T width, T height, T near, T fa
 template<typename T>
 constexpr Matrix<T, 4, 4> perspectiveProjection(T fov, T near, T far, T ratio) LM2_NOEXCEPT {
 	if (fov == static_cast<T>(0)) {
-		return identityMatrix<T, 4, 4>();
+		return identityMatrix<T, 4>();
 	}
 	T s = static_cast<T>(1) / tanScalar(degreesToRadians(fov / static_cast<T>(2)));
 	return {
@@ -1590,7 +1590,7 @@ void extractTransform(const Matrix<T, 4, 4>& mat, Vector<T, 3>& outPos, Matrix<T
 
 	for (size_t i = 0; i < 3; i++) {
 		for (size_t j = 0; j < 3; j++) {
-			outRot(i, j) /= outScale[i];
+			outRot(i, j) /= outScale[j];
 		}
 	}
 }
@@ -1603,7 +1603,7 @@ void extractTransform(const Matrix<T, 4, 4>& mat, Vector<T, 3>& outPos, Quaterni
 
 	for (size_t i = 0; i < 3; i++) {
 		for (size_t j = 0; j < 3; j++) {
-			tmpRot(i, j) /= outScale[i];
+			tmpRot(i, j) /= outScale[j];
 		}
 	}
 
