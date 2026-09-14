@@ -1045,7 +1045,7 @@ constexpr Vector<T, N> exp2(const Vector<T, N>& x) LM2_NOEXCEPT {
 /// @brief Get the angle between two Vectors
 template<typename T, size_t N>
 constexpr T angle(const Vector<T, N>& a, const Vector<T, N>& b) LM2_NOEXCEPT {
-	return arcCosScalar(dot(a, b) / (magnitude(a) * magnitude(b)));
+	return radiansToDegrees(arcCosScalar(dot(a, b) / (magnitude(a) * magnitude(b))));
 }
 // Reflect
 /// @brief Reflect a Vector from a normal
@@ -1349,6 +1349,12 @@ constexpr Matrix<T, N, N> inverse(const Matrix<T, N, N>& mat) {
 	Matrix<T, N, N> output{};
 
 	for (size_t i = 0; i < N; i++) {
+		if (equalScalar(solver.upper(i, i), static_cast<T>(0))) {
+			return {};
+		}
+	}
+
+	for (size_t i = 0; i < N; i++) {
 		Vector<T, N> dir{};
 		dir[i] = static_cast<T>(1);
 
@@ -1379,6 +1385,12 @@ constexpr Matrix<T, N, N> adjugate(const Matrix<T, N, N>& mat) {
 	PLUData<T, N, N> solver = plu(mat);
 
 	Matrix<T, N, N> inv{};
+
+	for (size_t i = 0; i < N; i++) {
+		if (equalScalar(solver.upper(i, i), static_cast<T>(0))) {
+			return {};
+		}
+	}
 
 	for (size_t i = 0; i < N; i++) {
 		Vector<T, N> dir{};
