@@ -8,6 +8,30 @@ This library is not designed for performance or complex linear algebra.
 
 It's primary purpose is to be lighweight and easy to use. Mainly being designed for graphics programming.
 
+## Features
+
+Generic fixed size Vectors and Matrices.
+
+Vector math.
+
+Matrix math.
+
+Generic Quaternions.
+
+Common Quaternion conversions. (Matrix, Euler Angles, Axis Angle)
+
+Quaternion interpolation.
+
+Linear interpolation.
+
+Permutations.
+
+Linear system solvers. (Gaussian Elimination, PLU dcomposition)
+
+Common Matrix constructors for graphics programming. (perspectiveProjection, orthogonalProjection, eulerRotation3DMatrix, viewMatrix etc.)
+
+Float comparisons with epsilon.
+
 ## How to use
 
 Minimum tested standard: C++ 14.
