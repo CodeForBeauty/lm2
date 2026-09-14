@@ -1,6 +1,6 @@
 # lm2
 
-A simple single-header C++ linear math library.
+A lightweight, single-header C++ linear math library.
 
 ## Overview
 
@@ -49,7 +49,7 @@ using vec3 = lm2::Vector<float, 3>;
 using mat3 = lm2::Matrix<float, 3, 3>;
 ```
 
-For more usage examples you can look through test.cpp.
+For more usage examples you can look through examples.cpp.
 
 ## Specification
 
@@ -282,3 +282,5 @@ For optimization of the binary size LM2_NO_OUTPUT_FUNCTIONS can be defined befor
 If enabled **std::cout << vector** won't work.
 
 Noexcept specifiers on the functions can be disabled by defining LM2_NOEXCEPT before including.
+
+The library has an enum with most common axes defines. So when accessing small Vectors/Matrices instead of indexing you can use: vec[lm2::axes::x] = 1.

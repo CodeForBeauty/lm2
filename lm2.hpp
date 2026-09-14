@@ -1629,9 +1629,9 @@ constexpr Matrix<T, 4, 4> viewMatrix(const Vector<T, 3>& eye, const Vector<T, 3>
 	Vector<T, 3> right = normalize(cross(forward, up));
 	Vector<T, 3> upDir = cross(forward, right);
 	return {
-		{ right.x,           right.y,           right.z,           dot(right, -eye) },
-		{ upDir.x,           upDir.y,           upDir.z,           dot(upDir, -eye) },
-		{ forward.x,         forward.y,         forward.z,         dot(forward, -eye) },
+		{ right[axes::x],    right[axes::y],    right[axes::z],    dot(right, -eye) },
+		{ upDir[axes::x],    upDir[axes::y],    upDir[axes::z],    dot(upDir, -eye) },
+		{ forward[axes::x],  forward[axes::y],  forward[axes::z],  dot(forward, -eye) },
 		{ static_cast<T>(0), static_cast<T>(0), static_cast<T>(0), static_cast<T>(1) },
 	};
 }
